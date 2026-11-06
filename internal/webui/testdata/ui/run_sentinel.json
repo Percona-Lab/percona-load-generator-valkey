@@ -1,0 +1,147 @@
+{
+  "client": {
+    "cores_per_100k_ops": 1.1111111111111112,
+    "cpu_cores": 0.1,
+    "elapsed_seconds": 10,
+    "errors": 0,
+    "load_profile": "",
+    "loop": "closed",
+    "max_ms": 1,
+    "mean_ms": 1,
+    "misses": 0,
+    "ops": 90000,
+    "ops_per_sec": 9000,
+    "p50_ms": 1,
+    "p95_ms": 1,
+    "p999_ms": 1,
+    "p99_ms": 1,
+    "peak_workers": 0,
+    "series_factor": 1,
+    "target_mode": "sentinel"
+  },
+  "config_yaml": "target:\n    uris:\n        - valkey://127.0.0.1:6379\n    mode: sentinel\n    client: valkey-go\n    sentinel:\n        master_name: mymaster\n    read_from_replicas: false\n    pool:\n        pipeline_depth: 1\n    tls:\n        enabled: false\n        ca_file: \"\"\n        cert_file: \"\"\n        key_file: \"\"\n        server_name: \"\"\n        insecure_skip_verify: false\nrun:\n    duration: 10s\n    concurrency: 64\n    seed: 1\n    op_budget: 0\n    deterministic: false\n    target_ops_per_sec: 0\n    coordinated_omission: false\n    loop: closed\n    load_profile:\n        kind: fixed\n        workers: 0\n        start_workers: 0\n        end_workers: 0\n        ramp_over: \"\"\n        steps: []\n        base_workers: 0\n        peak_workers: 0\n        spike_at: \"\"\n        spike_for: \"\"\n        min_workers: 0\n        max_workers: 0\n        period: \"\"\n    sweep:\n        kind: none\n        values: []\n        pause: 0s\ndataset:\n    key_count: 100000\n    key_prefix: 'plgv:'\n    key_distribution: uniform\n    zipf_s: 0\n    value_size: 256\n    collection_size: 100\n    hash_tag_groups: 0\n    hash_fields: 8\n    bitmap_bits: 10000\n    stream_length: 20\n    ttl:\n        mode: none\n        seconds: 300\n        min_seconds: 60\n        max_seconds: 3600\n        fraction: 1\n    preload: true\nworkload:\n    mix:\n        - op: GET\n          weight: 80\n        - op: SET\n          weight: 20\n    pubsub:\n        subscribers: 0\n        channels: 16\n        sharded: false\n    allow_dangerous: false\nserver_metrics:\n    enabled: true\n    interval: 1s\n    slowlog: true\n    slowlog_entries: 128\n    latency: true\nkeyspace_analysis:\n    enabled: false\n    samples: 10000\n    top: 10\n    match: \"\"\nrecord:\n    path: \"\"\n    compression: auto\n    max_mb: 0\n    backpressure: fail\n    outcomes: false\n    checksums: false\n    data_fingerprint: true\noutput:\n    sample_interval: 1s\n    summary_file: \"\"\n",
+  "findings": [
+    {
+      "advice": "A primary was replaced while the workload ran. Expect a burst of errors (timeouts, connection resets) and a latency spike around the marked time, then recovery on the new primary. Compare the markers on the charts with the error series.",
+      "evidence": "at 3s: master \"mymaster\" moved from 127.0.0.1:6380 to 127.0.0.1:6381",
+      "id": "failover-during-run",
+      "severity": "warning",
+      "title": "1 failover(s) happened during the run"
+    }
+  ],
+  "fingerprint": "66dc5db7330f",
+  "finished_at": "2026-11-04T21:00:10Z",
+  "label": "sentinel run",
+  "per_op": [
+    {
+      "errors": 0,
+      "max_ms": 0,
+      "misses": 0,
+      "op": "GET",
+      "ops": 72000,
+      "p50_ms": 0,
+      "p99_ms": 0
+    },
+    {
+      "errors": 0,
+      "max_ms": 0,
+      "misses": 0,
+      "op": "SET",
+      "ops": 18000,
+      "p50_ms": 0,
+      "p99_ms": 0
+    }
+  ],
+  "schema_version": 1,
+  "seed": 1,
+  "series": [
+    {
+      "errors": 0,
+      "max_ms": 0,
+      "offset_s": 1,
+      "ops_per_sec": 9000,
+      "p50_ms": 1,
+      "p95_ms": 0,
+      "p99_ms": 2,
+      "workers": 0
+    },
+    {
+      "errors": 0,
+      "max_ms": 0,
+      "offset_s": 2,
+      "ops_per_sec": 9000,
+      "p50_ms": 1,
+      "p95_ms": 0,
+      "p99_ms": 2,
+      "workers": 0
+    }
+  ],
+  "server": {
+    "evicted_keys": 0,
+    "expired_keys": 0,
+    "hit_ratio": 1,
+    "max_blocked_clients": 0,
+    "max_fork_usec": 0,
+    "max_fragmentation_ratio": 0,
+    "maxmemory": 0,
+    "maxmemory_policy": "",
+    "mode": "sentinel",
+    "poll_errors": 0,
+    "rejected_connections": 0,
+    "replica_lag_bytes": 0,
+    "role": "",
+    "sample_stride": 0,
+    "samples": [
+      {
+        "blocked_clients": 0,
+        "connected_clients": 0,
+        "fragmentation_ratio": 0,
+        "hit_ratio": -1,
+        "net_in_kbps": 0,
+        "net_out_kbps": 0,
+        "offset_s": 1,
+        "ops_per_sec": 3000,
+        "used_memory": 20971520
+      },
+      {
+        "blocked_clients": 0,
+        "connected_clients": 0,
+        "fragmentation_ratio": 0,
+        "hit_ratio": -1,
+        "net_in_kbps": 0,
+        "net_out_kbps": 0,
+        "offset_s": 2,
+        "ops_per_sec": 3100,
+        "used_memory": 22020096
+      }
+    ],
+    "server_ops": 90000,
+    "server_ops_exact": true,
+    "slowlog_new": 0,
+    "slowlog_worst_ms": 0,
+    "topology": {
+      "cluster_down": false,
+      "events": [
+        {
+          "detail": "master \"mymaster\" moved from 127.0.0.1:6380 to 127.0.0.1:6381",
+          "kind": "failover",
+          "offset_s": 3
+        }
+      ],
+      "mode": "sentinel",
+      "poll_errors": 0,
+      "shards": [
+        {
+          "primary": "127.0.0.1:6381",
+          "replicas": [],
+          "slots": 0
+        }
+      ]
+    },
+    "used_memory_max": 62914560,
+    "version": "9.1.3"
+  },
+  "started_at": "2026-11-04T21:00:00Z",
+  "tool": "plgv",
+  "tool_version": "test"
+}

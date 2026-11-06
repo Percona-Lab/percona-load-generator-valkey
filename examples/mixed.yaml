@@ -1,0 +1,37 @@
+# A mixed workload across all core families. Run it with:
+#   ./bin/plgv run -config examples/mixed.yaml
+target:
+  uris: ["valkey://127.0.0.1:6379"]
+  pool:
+    pipeline_depth: 8
+run:
+  duration: 20s
+  concurrency: 32
+  seed: 42
+dataset:
+  key_count: 20000
+  key_prefix: "demo:"
+  key_distribution: zipf
+  value_size: 512
+  collection_size: 50
+  hash_fields: 8
+  ttl: {mode: random, min_seconds: 60, max_seconds: 600, fraction: 0.5}
+workload:
+  mix:
+    - {op: GET, weight: 30}
+    - {op: SET, weight: 8}
+    - {op: MGET, weight: 4, count: 5}
+    - {op: INCR, weight: 4}
+    - {op: HSET, weight: 6, fields: 4}
+    - {op: HGET, weight: 10}
+    - {op: HGETALL, weight: 2}
+    - {op: LPUSH, weight: 3}
+    - {op: RPOP, weight: 3}
+    - {op: LRANGE, weight: 2, count: 10}
+    - {op: SADD, weight: 4}
+    - {op: SISMEMBER, weight: 6}
+    - {op: ZADD, weight: 5}
+    - {op: ZSCORE, weight: 4}
+    - {op: ZRANGE, weight: 3, count: 10}
+    - {op: EXPIRE, weight: 1}
+    - {op: DEL, weight: 1, type: hash}

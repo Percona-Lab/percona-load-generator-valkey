@@ -1,0 +1,23 @@
+# The workload. No credentials here: they come from the plgv-credentials Secret.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: plgv-config
+data:
+  plgv.yaml: |
+    target:
+      uris: ["valkeys://valkey.example.svc:6379"]
+      tls:
+        enabled: true
+        ca_file: /tls/ca.crt
+        cert_file: /tls/tls.crt
+        key_file: /tls/tls.key
+    run:
+      duration: 5m
+      concurrency: 64
+    workload:
+      preset: cache
+    server_metrics:
+      enabled: true
+    output:
+      summary_file: /tmp/summary.json

@@ -1,0 +1,9 @@
+# Exactly 50,000 operations, the same commands every time, and a fingerprint to prove it.
+#   ./bin/plgv run -config examples/deterministic.yaml | grep traffic
+workload:
+  preset: session
+run:
+  seed: 7
+  concurrency: 8
+  op_budget: 50000
+  deterministic: true

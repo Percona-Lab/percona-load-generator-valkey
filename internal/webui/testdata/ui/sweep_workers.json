@@ -1,0 +1,70 @@
+{
+  "complete": true,
+  "id": "swtest",
+  "kind": "workers",
+  "label": "mysweep",
+  "notes": [
+    "More workers stopped helping after 16 workers: the next step gained less than 5% throughput.",
+    "p99 latency reached twice its 4-worker value at 16 workers."
+  ],
+  "peak_run_id": "20261104-120300",
+  "rows": [
+    {
+      "dropped_ops": 0,
+      "efficiency": 1,
+      "errors": 0,
+      "index": 1,
+      "label": "mysweep - 4 workers",
+      "ops_per_sec": 20000,
+      "p50_ms": 1,
+      "p95_ms": 1,
+      "p99_ms": 1,
+      "run_id": "20261104-120000",
+      "stopped": false,
+      "value": 4
+    },
+    {
+      "dropped_ops": 0,
+      "efficiency": 0.975,
+      "errors": 0,
+      "index": 2,
+      "label": "mysweep - 8 workers",
+      "ops_per_sec": 39000,
+      "p50_ms": 1.015807,
+      "p95_ms": 1.015807,
+      "p99_ms": 1.2,
+      "run_id": "20261104-120100",
+      "stopped": false,
+      "value": 8
+    },
+    {
+      "dropped_ops": 0,
+      "efficiency": 0.75,
+      "errors": 0,
+      "index": 3,
+      "label": "mysweep - 16 workers",
+      "ops_per_sec": 60000,
+      "p50_ms": 1.015807,
+      "p95_ms": 1.015807,
+      "p99_ms": 2.5,
+      "run_id": "20261104-120200",
+      "stopped": false,
+      "value": 16
+    },
+    {
+      "dropped_ops": 0,
+      "efficiency": 0.38125,
+      "errors": 0,
+      "index": 4,
+      "label": "mysweep - 32 workers",
+      "ops_per_sec": 61000,
+      "p50_ms": 1.015807,
+      "p95_ms": 1.015807,
+      "p99_ms": 6,
+      "run_id": "20261104-120300",
+      "stopped": false,
+      "value": 32
+    }
+  ],
+  "total": 4
+}

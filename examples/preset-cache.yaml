@@ -1,0 +1,10 @@
+# Start from a built-in preset; anything you write here overrides it.
+# List the presets with: ./bin/plgv presets
+#   ./bin/plgv run -config examples/preset-cache.yaml
+# or without a file: ./bin/plgv run -preset cache -duration 30s
+workload:
+  preset: cache
+run:
+  duration: 30s
+dataset:
+  key_count: 50000      # the preset's zipf distribution, TTLs and mix stay

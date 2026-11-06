@@ -1,0 +1,186 @@
+# Local Valkey environment for plgv development.
+#   make valkey-up          standalone on 127.0.0.1:6379
+#   make valkey-cluster-up  6-node cluster on 127.0.0.1:7001-7006
+#   make valkey-tls-up      mutual TLS + ACL users on 127.0.0.1:6444
+#   make valkey-sentinel-up primary 6380, replica 6381, three sentinels 26379-26381 (master set "mymaster")
+# Cluster nodes share valkey-c1's network namespace so 127.0.0.1:700x works
+# both inside the stack and from the host.
+# Override the image tag with VALKEY_VERSION (default: latest 9.x).
+name: plgv
+
+x-cluster-node: &cluster-node
+  image: valkey/valkey:${VALKEY_VERSION:-9}
+  profiles: ["cluster"]
+  restart: unless-stopped
+
+services:
+  valkey:
+    image: valkey/valkey:${VALKEY_VERSION:-9}
+    container_name: plgv-valkey
+    command: valkey-server --appendonly no --save ""
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  valkey-c1:
+    <<: *cluster-node
+    container_name: plgv-valkey-c1
+    command: >
+      valkey-server --port 7001 --cluster-enabled yes --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000 --appendonly no
+      --cluster-announce-ip 127.0.0.1 --cluster-announce-port 7001 --cluster-announce-bus-port 17001
+    ports: ["7001:7001", "17001:17001", "7002:7002", "17002:17002", "7003:7003", "17003:17003", "7004:7004", "17004:17004", "7005:7005", "17005:17005", "7006:7006", "17006:17006"]
+
+  valkey-c2:
+    <<: *cluster-node
+    container_name: plgv-valkey-c2
+    command: >
+      valkey-server --port 7002 --cluster-enabled yes --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000 --appendonly no
+      --cluster-announce-ip 127.0.0.1 --cluster-announce-port 7002 --cluster-announce-bus-port 17002
+    network_mode: "service:valkey-c1"
+
+  valkey-c3:
+    <<: *cluster-node
+    container_name: plgv-valkey-c3
+    command: >
+      valkey-server --port 7003 --cluster-enabled yes --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000 --appendonly no
+      --cluster-announce-ip 127.0.0.1 --cluster-announce-port 7003 --cluster-announce-bus-port 17003
+    network_mode: "service:valkey-c1"
+
+  valkey-c4:
+    <<: *cluster-node
+    container_name: plgv-valkey-c4
+    command: >
+      valkey-server --port 7004 --cluster-enabled yes --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000 --appendonly no
+      --cluster-announce-ip 127.0.0.1 --cluster-announce-port 7004 --cluster-announce-bus-port 17004
+    network_mode: "service:valkey-c1"
+
+  valkey-c5:
+    <<: *cluster-node
+    container_name: plgv-valkey-c5
+    command: >
+      valkey-server --port 7005 --cluster-enabled yes --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000 --appendonly no
+      --cluster-announce-ip 127.0.0.1 --cluster-announce-port 7005 --cluster-announce-bus-port 17005
+    network_mode: "service:valkey-c1"
+
+  valkey-c6:
+    <<: *cluster-node
+    container_name: plgv-valkey-c6
+    command: >
+      valkey-server --port 7006 --cluster-enabled yes --cluster-config-file nodes.conf
+      --cluster-node-timeout 5000 --appendonly no
+      --cluster-announce-ip 127.0.0.1 --cluster-announce-port 7006 --cluster-announce-bus-port 17006
+    network_mode: "service:valkey-c1"
+
+  valkey-cluster-init:
+    image: valkey/valkey:${VALKEY_VERSION:-9}
+    container_name: plgv-valkey-cluster-init
+    profiles: ["cluster"]
+    network_mode: "service:valkey-c1"
+    restart: "no"
+    depends_on: [valkey-c1, valkey-c2, valkey-c3, valkey-c4, valkey-c5, valkey-c6]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        sleep 3
+        valkey-cli -p 7001 cluster info | grep -q cluster_state:ok && exit 0
+        valkey-cli --cluster create 127.0.0.1:7001 127.0.0.1:7002 127.0.0.1:7003 \
+          127.0.0.1:7004 127.0.0.1:7005 127.0.0.1:7006 --cluster-replicas 1 --cluster-yes
+
+  # --- Sentinel: one primary, one replica, three sentinels. All share the
+  # network namespace of sentinel-primary so 127.0.0.1:<port> works inside the
+  # stack and from the host (same trick as the cluster).
+  sentinel-primary:
+    image: valkey/valkey:${VALKEY_VERSION:-9}
+    container_name: plgv-sentinel-primary
+    profiles: ["sentinel"]
+    command: valkey-server --port 6380 --appendonly no --save ""
+    ports: ["6380:6380", "6381:6381", "26379:26379", "26380:26380", "26381:26381"]
+    healthcheck:
+      test: ["CMD", "valkey-cli", "-p", "6380", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15
+
+  sentinel-replica:
+    image: valkey/valkey:${VALKEY_VERSION:-9}
+    container_name: plgv-sentinel-replica
+    profiles: ["sentinel"]
+    network_mode: "service:sentinel-primary"
+    command: valkey-server --port 6381 --replicaof 127.0.0.1 6380 --appendonly no --save ""
+    depends_on:
+      sentinel-primary: {condition: service_healthy}
+
+  sentinel-1: &sentinel
+    image: valkey/valkey:${VALKEY_VERSION:-9}
+    container_name: plgv-sentinel-1
+    profiles: ["sentinel"]
+    network_mode: "service:sentinel-primary"
+    depends_on: [sentinel-replica]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        cat > /tmp/sentinel.conf <<EOF
+        port 26379
+        sentinel monitor mymaster 127.0.0.1 6380 2
+        sentinel down-after-milliseconds mymaster 2000
+        sentinel failover-timeout mymaster 8000
+        sentinel parallel-syncs mymaster 1
+        EOF
+        sleep 2
+        exec valkey-server /tmp/sentinel.conf --sentinel
+  sentinel-2:
+    <<: *sentinel
+    container_name: plgv-sentinel-2
+    command:
+      - |
+        cat > /tmp/sentinel.conf <<EOF
+        port 26380
+        sentinel monitor mymaster 127.0.0.1 6380 2
+        sentinel down-after-milliseconds mymaster 2000
+        sentinel failover-timeout mymaster 8000
+        sentinel parallel-syncs mymaster 1
+        EOF
+        sleep 2
+        exec valkey-server /tmp/sentinel.conf --sentinel
+  sentinel-3:
+    <<: *sentinel
+    container_name: plgv-sentinel-3
+    command:
+      - |
+        cat > /tmp/sentinel.conf <<EOF
+        port 26381
+        sentinel monitor mymaster 127.0.0.1 6380 2
+        sentinel down-after-milliseconds mymaster 2000
+        sentinel failover-timeout mymaster 8000
+        sentinel parallel-syncs mymaster 1
+        EOF
+        sleep 2
+        exec valkey-server /tmp/sentinel.conf --sentinel
+
+  # --- TLS + ACL: mutual TLS on 6444 (no plain port), users from testdata/acl/users.acl.
+  # Certificates: scripts/gen-test-certs.sh (make valkey-tls-up runs it).
+  valkey-tls:
+    image: valkey/valkey:${VALKEY_VERSION:-9}
+    container_name: plgv-valkey-tls
+    profiles: ["tls"]
+    command: >
+      valkey-server --port 0 --tls-port 6444
+      --tls-cert-file /certs/server.crt --tls-key-file /certs/server.key --tls-ca-cert-file /certs/ca.crt
+      --tls-auth-clients yes --aclfile /acl/users.acl --appendonly no --save ""
+    ports: ["127.0.0.1:6444:6444"]
+    volumes:
+      - ./.test-certs:/certs:ro
+      - ./testdata/acl:/acl:ro
+    healthcheck:
+      test: ["CMD", "valkey-cli", "--tls", "--cacert", "/certs/ca.crt", "--cert", "/certs/client.crt", "--key", "/certs/client.key", "-p", "6444", "--user", "admin", "--pass", "adminpass", "--no-auth-warning", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 15

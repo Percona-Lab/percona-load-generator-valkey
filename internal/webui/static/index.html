@@ -1,0 +1,1983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Percona Load Generator for Valkey (plgv)</title>
+<script src="chart.js"></script>
+<style>
+/* plgv UI. Tokens first; components use only these values (see docs/web-ui-design-system.md). */
+:root {
+  --p-sky:#1486ff; --p-sunrise:#f0b336; --p-fire:#f24500; --p-forest:#059669; --p-amethyst:#8b5cf6; --p-stone:#697793; --p-sunset:#ff7e1a;
+  --bg:#f4f6f9; --surface:#fff; --surface-muted:#f8fafc; --surface-sunken:#f1f4f8;
+  --text:#172033; --text-strong:#0e1a3a; --text-secondary:#5c6b80; --text-muted:#7b8798;
+  --border:#e3e8ef; --border-strong:#cdd5e0;
+  --accent:#0b5cab; --accent-hover:#094e92; --accent-soft:#e8f1fb; --accent-border:#b8d2ef;
+  --focus:#0b5cab; --focus-ring:0 0 0 3px rgba(11,92,171,.22);
+  --ok:#047857; --ok-soft:#ecfdf5; --ok-border:#a7f3d0;
+  --warn:#9a3412; --warn-soft:#fff7ed; --warn-border:#fed7aa;
+  --danger:#b91c1c; --danger-soft:#fef2f2; --danger-border:#fecaca;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --fs-xs:11px; --fs-sm:12px; --fs-base:13px; --fs-md:14px; --fs-lg:16px; --fs-xl:20px; --fs-2xl:24px;
+  --space-1:4px; --space-2:8px; --space-3:12px; --space-4:16px; --space-5:24px; --space-6:32px;
+  --radius-sm:6px; --radius-md:8px; --radius-lg:12px; --control-h:34px; --control-h-sm:28px;
+  --elevation-1:0 1px 2px rgba(14,26,58,.06); --elevation-2:0 4px 12px rgba(14,26,58,.10);
+}
+* { box-sizing:border-box; }
+[hidden] { display:none !important; }
+body { margin:0; background:var(--bg); color:var(--text); font:var(--fs-base)/1.5 var(--font-sans); }
+header.top { background:var(--surface); border-bottom:1px solid var(--border); position:sticky; top:0; z-index:20; }
+.top-row { display:flex; align-items:center; gap:var(--space-4); padding:var(--space-3) var(--space-5); }
+.top-row h1 { font-size:var(--fs-lg); margin:0; color:var(--text-strong); flex:1; }
+.top-row h1 small { color:var(--text-muted); font-weight:400; margin-left:var(--space-2); }
+.status-badge { padding:2px 10px; border-radius:99px; font-size:var(--fs-sm); font-weight:600; border:1px solid var(--border-strong); background:var(--surface-muted); color:var(--text-secondary); }
+.status-badge.active { background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent); }
+.status-badge.done { background:var(--ok-soft); border-color:var(--ok-border); color:var(--ok); }
+.status-badge.error { background:var(--danger-soft); border-color:var(--danger-border); color:var(--danger); }
+nav.tabs { display:flex; gap:2px; padding:0 var(--space-5); overflow-x:auto; }
+nav.tabs button { background:none; border:0; border-bottom:3px solid transparent; padding:var(--space-2) var(--space-4); font:inherit; font-weight:500; color:var(--text-secondary); cursor:pointer; white-space:nowrap; }
+nav.tabs button:hover { color:var(--text-strong); }
+nav.tabs button[aria-selected="true"] { color:var(--accent); border-bottom-color:var(--accent); }
+nav.tabs .count { background:var(--danger); color:#fff; border-radius:99px; font-size:var(--fs-xs); padding:0 6px; margin-left:6px; }
+main { padding:var(--space-5); max-width:1280px; margin:0 auto; }
+h2 { font-size:var(--fs-xl); color:var(--text-strong); margin:0 0 var(--space-4); }
+h3 { font-size:var(--fs-md); margin:0 0 var(--space-3); color:var(--text-strong); }
+.card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:var(--space-4) var(--space-5); box-shadow:var(--elevation-1); margin-bottom:var(--space-4); }
+.card > h3:first-child { display:flex; align-items:center; gap:var(--space-2); }
+.level-tag { font-size:var(--fs-xs); font-weight:600; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); background:var(--surface-sunken); border-radius:4px; padding:1px 6px; }
+.grid { display:flex; flex-wrap:wrap; gap:var(--space-3) var(--space-5); align-items:flex-start; }
+.form-group { display:flex; flex-direction:column; gap:var(--space-1); }
+label, .label { font-weight:500; }
+input[type=text], input[type=number], select { height:var(--control-h); padding:0 var(--space-3); border:1px solid var(--border-strong); border-radius:var(--radius-md); font:inherit; background:var(--surface); color:var(--text); max-width:100%; }
+input:focus-visible, select:focus-visible, button:focus-visible { outline:2px solid var(--focus); outline-offset:1px; box-shadow:var(--focus-ring); }
+input[aria-invalid=true], select[aria-invalid=true] { border-color:var(--danger); box-shadow:0 0 0 3px rgba(185,28,28,.15); }
+.f-xs { width:6.5rem; } .f-sm { width:9.5rem; } .f-md { width:16rem; } .f-lg { width:26rem; } .f-xl { width:min(46rem,100%); }
+.form-group.grow { flex:1 1 24rem; max-width:46rem; }
+.field-check { display:flex; align-items:center; gap:var(--space-2); height:var(--control-h); }
+.field-check input { width:16px; height:16px; }
+.settings-note { color:var(--text-secondary); font-size:var(--fs-sm); max-width:60rem; margin:var(--space-1) 0 0; }
+.note-box { background:var(--accent-soft); border:1px solid var(--accent-border); border-radius:var(--radius-md); padding:var(--space-3) var(--space-4); margin-top:var(--space-3); color:var(--text); max-width:62rem; font-size:var(--fs-sm); }
+.note-box strong { color:var(--text-strong); }
+.field-error { color:var(--danger); font-size:var(--fs-sm); }
+.btn { height:var(--control-h); padding:0 var(--space-4); border-radius:var(--radius-md); border:1px solid var(--border-strong); background:var(--surface); color:var(--text); font:inherit; font-weight:600; cursor:pointer; }
+.btn:hover { background:var(--surface-muted); }
+.btn-primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+.btn-primary:hover { background:var(--accent-hover); }
+.btn-danger { background:var(--danger); border-color:var(--danger); color:#fff; }
+.btn-small { height:var(--control-h-sm); padding:0 var(--space-3); font-size:var(--fs-sm); }
+.btn:disabled { opacity:.55; cursor:not-allowed; }
+.btn-link { background:none; border:0; color:var(--accent); cursor:pointer; font:inherit; padding:0; }
+.tier-bar { display:flex; gap:var(--space-4); align-items:center; flex-wrap:wrap; margin-bottom:var(--space-4); }
+.tier-option { display:flex; align-items:center; gap:var(--space-2); }
+.mix-table { width:100%; border-collapse:collapse; }
+.mix-table th { text-align:left; font-size:var(--fs-xs); text-transform:uppercase; color:var(--text-muted); padding:var(--space-1) var(--space-2); }
+.mix-table td { padding:var(--space-1) var(--space-2); vertical-align:top; }
+.mix-share { color:var(--text-secondary); font-variant-numeric:tabular-nums; padding-top:8px; display:inline-block; min-width:3.5rem; }
+.launch-bar { position:sticky; bottom:0; background:var(--surface); border:1px solid var(--border-strong); border-radius:var(--radius-lg); box-shadow:var(--elevation-2); padding:var(--space-3) var(--space-5); display:flex; align-items:center; gap:var(--space-4); flex-wrap:wrap; margin-top:var(--space-4); }
+.launch-bar .summary { flex:1; color:var(--text-secondary); min-width:16rem; }
+.inline-error { background:var(--danger-soft); border:1px solid var(--danger-border); color:var(--danger); border-radius:var(--radius-md); padding:var(--space-2) var(--space-3); margin-bottom:var(--space-3); }
+.inline-error ul { margin:var(--space-1) 0 0 var(--space-4); padding:0; }
+.banner { background:var(--accent-soft); border:1px solid var(--accent-border); border-radius:var(--radius-md); padding:var(--space-2) var(--space-4); margin-bottom:var(--space-4); display:flex; gap:var(--space-3); align-items:center; flex-wrap:wrap; }
+.banner.warn { background:var(--warn-soft); border-color:var(--warn-border); color:var(--warn); }
+.empty { color:var(--text-secondary); padding:var(--space-5); text-align:center; background:var(--surface); border:1px dashed var(--border-strong); border-radius:var(--radius-lg); }
+.kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:var(--space-3); margin-bottom:var(--space-4); }
+.kpi { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:var(--space-3) var(--space-4); }
+.kpi .k { font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); }
+.kpi .v { font-size:var(--fs-xl); font-weight:700; color:var(--text-strong); font-variant-numeric:tabular-nums; }
+.kpi .s { font-size:var(--fs-sm); color:var(--text-secondary); }
+.progress { height:8px; background:var(--surface-sunken); border-radius:99px; overflow:hidden; margin:var(--space-2) 0 var(--space-4); }
+.progress > div { height:100%; background:var(--accent); width:0; transition:width .4s; }
+.charts { display:grid; grid-template-columns:repeat(auto-fit,minmax(420px,1fr)); gap:var(--space-4); }
+.chart-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:var(--space-3) var(--space-4); }
+.chart-card h3 { margin-bottom:var(--space-2); font-size:var(--fs-base); }
+.chart-box { position:relative; height:240px; }
+table.data { width:100%; border-collapse:collapse; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
+table.data th { background:var(--surface-muted); text-align:left; font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); padding:var(--space-2) var(--space-3); border-bottom:1px solid var(--border); }
+table.data td { padding:var(--space-2) var(--space-3); border-bottom:1px solid var(--border); }
+table.data tr:last-child td { border-bottom:0; }
+table.data tbody tr:hover { background:var(--surface-muted); }
+td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+code, .mono { font-family:var(--font-mono); font-size:var(--fs-sm); }
+.insight { border:1px solid var(--border); border-left-width:5px; border-radius:var(--radius-md); padding:var(--space-3) var(--space-4); margin-bottom:var(--space-3); background:var(--surface); }
+.insight.critical { border-left-color:var(--danger); background:var(--danger-soft); }
+.insight.warning { border-left-color:var(--p-sunset); background:var(--warn-soft); }
+.insight.info { border-left-color:var(--accent); background:var(--accent-soft); }
+.insight .sev { font-size:var(--fs-xs); font-weight:700; text-transform:uppercase; letter-spacing:.05em; }
+.insight .ev { color:var(--text-secondary); font-size:var(--fs-sm); margin:var(--space-1) 0; }
+.chip { display:inline-block; padding:0 8px; border-radius:99px; font-size:var(--fs-xs); font-weight:600; border:1px solid var(--border-strong); background:var(--surface-muted); margin-right:4px; }
+.chip.critical { background:var(--danger-soft); border-color:var(--danger-border); color:var(--danger); }
+.chip.warning { background:var(--warn-soft); border-color:var(--warn-border); color:var(--warn); }
+.chip.info { background:var(--accent-soft); border-color:var(--accent-border); color:var(--accent); }
+.chip.ok { background:var(--ok-soft); border-color:var(--ok-border); color:var(--ok); }
+.better { color:var(--ok); font-weight:600; } .worse { color:var(--danger); font-weight:600; }
+.toolbar { display:flex; gap:var(--space-3); align-items:center; flex-wrap:wrap; margin-bottom:var(--space-4); }
+.kv { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:var(--space-1) var(--space-5); }
+.kv div { display:flex; justify-content:space-between; gap:var(--space-3); border-bottom:1px dotted var(--border-strong); padding:2px 0; }
+.kv .k { color:var(--text-secondary); }
+.tm { display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:var(--space-2) var(--space-4); margin-bottom:var(--space-4); }
+.tm .tm-range { display:flex; align-items:center; gap:var(--space-2); }
+.tm input[type=range] { width:11rem; }
+.tm .tm-stats { color:var(--text-secondary); font-size:var(--fs-sm); flex-basis:100%; }
+.sub-grid { display:flex; flex-wrap:wrap; gap:var(--space-3) var(--space-5); margin-top:var(--space-3); }
+.step-table { border-collapse:collapse; margin-top:var(--space-2); }
+.step-table td { padding:2px var(--space-2) 2px 0; }
+tr.peak td { background:var(--ok-soft); }
+@media (max-width:700px) { main { padding:var(--space-3); } .top-row { padding:var(--space-3); } .charts { grid-template-columns:1fr; } }
+.rp-verdict { display:inline-block; font-size:var(--fs-xs); font-weight:600; text-transform:uppercase; letter-spacing:.04em; padding:2px 10px; border-radius:99px; margin-left:8px; vertical-align:middle; border:1px solid var(--border-strong); background:var(--surface-muted); color:var(--text-secondary); }
+.rp-verdict.v-slower, .rp-verdict.v-not-comparable { background:var(--danger-soft); border-color:var(--danger-border); color:var(--danger); }
+.rp-verdict.v-faster, .rp-verdict.v-equivalent { background:var(--ok-soft); border-color:var(--ok-border); color:var(--ok); }
+.rp-verdict.v-mixed { background:var(--warn-soft); border-color:var(--warn-border); color:var(--warn); }
+.hist { display:flex; flex-direction:column; gap:6px; padding:var(--space-2) 0; }
+.hist-row { display:grid; grid-template-columns:9.5rem 1fr 4rem; align-items:center; gap:var(--space-2); font-size:var(--fs-sm); }
+.hist-label { color:var(--text-secondary); }
+.hist-track { background:var(--surface-sunken); border-radius:99px; height:10px; overflow:hidden; }
+.hist-fill { display:block; height:100%; background:var(--p-sky); border-radius:99px; }
+.hist-n { text-align:right; font-variant-numeric:tabular-nums; color:var(--text); }
+
+/* ---- plgm-style shell: header card, task cards, level control, categories ---- */
+header.top { background:transparent; border-bottom:0; position:static; padding:var(--space-4) var(--space-5) 0; max-width:1280px; margin:0 auto; }
+.top-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--elevation-1); }
+.top-row { display:flex; align-items:center; gap:var(--space-3); padding:var(--space-3) var(--space-4); }
+.brand { display:flex; align-items:center; gap:var(--space-3); background:none; border:0; padding:0; font:inherit; cursor:pointer; color:inherit; text-align:left; }
+.brand-logo { width:30px; height:30px; border-radius:8px; background:#0e1a3a; display:grid; place-items:center; border-bottom:3px solid #f97316; }
+.brand-logo svg { width:18px; height:18px; stroke:#fff; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.brand strong { font-size:var(--fs-md); color:var(--text-strong); letter-spacing:.02em; }
+.brand small { color:var(--text-secondary); font-size:var(--fs-base); font-weight:400; }
+.top-spacer { flex:1; }
+.run-clock { font-family:var(--font-mono); font-size:var(--fs-md); color:var(--text-strong); letter-spacing:.04em; }
+.status-badge { text-transform:uppercase; letter-spacing:.05em; font-size:var(--fs-xs); }
+nav.tabs { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); margin-top:var(--space-3); padding:0 var(--space-3); box-shadow:var(--elevation-1); }
+.eyebrow { text-transform:uppercase; letter-spacing:.08em; font-size:var(--fs-sm); font-weight:600; color:var(--accent); margin:var(--space-3) 0 var(--space-1); }
+.home h2 { font-size:var(--fs-2xl); margin:0 0 var(--space-2); }
+.home .lead { color:var(--text-secondary); font-size:var(--fs-md); max-width:46rem; margin:0 0 var(--space-5); }
+.home h3.group { text-transform:uppercase; letter-spacing:.08em; font-size:var(--fs-sm); color:var(--text-muted); margin:var(--space-5) 0 var(--space-3); }
+.task-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:var(--space-4); }
+.task-card { position:relative; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); box-shadow:var(--elevation-1); display:flex; flex-direction:column; min-height:118px; transition:box-shadow .15s,border-color .15s; }
+.task-card:hover { border-color:var(--accent-border); box-shadow:var(--elevation-2); }
+.task-card.dashed { background:var(--surface-muted); border-style:dashed; box-shadow:none; }
+.task-main { display:flex; gap:var(--space-3); align-items:flex-start; text-align:left; background:none; border:0; padding:var(--space-4) var(--space-4) var(--space-2); font:inherit; color:inherit; cursor:pointer; flex:1; }
+.task-main:focus-visible { border-radius:var(--radius-lg); }
+.task-icon { flex:none; width:38px; height:38px; border-radius:var(--radius-md); background:var(--accent-soft); display:grid; place-items:center; }
+.task-icon svg { width:20px; height:20px; stroke:var(--accent); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.dashed .task-icon { background:var(--surface-sunken); } .dashed .task-icon svg { stroke:var(--text-secondary); }
+.task-main strong { display:block; font-size:var(--fs-md); color:var(--text-strong); margin-bottom:2px; }
+.task-main span.d { color:var(--text-secondary); font-size:var(--fs-base); }
+.task-defaults { align-self:flex-end; margin:0 var(--space-4) var(--space-3) 0; background:none; border:0; color:var(--accent); font:inherit; font-size:var(--fs-base); cursor:pointer; padding:2px 0; }
+.task-defaults:hover { text-decoration:underline; }
+.task-arrow { margin:0 var(--space-4) var(--space-3) 0; align-self:flex-end; color:var(--text-secondary); }
+.taskbar { display:flex; align-items:center; gap:var(--space-3); flex-wrap:wrap; margin:var(--space-3) 0; }
+.taskbar .eyebrow { margin:0; color:var(--text-muted); }
+.taskbar select { min-width:18rem; font-weight:600; }
+.task-head h2 { margin:var(--space-3) 0 var(--space-1); font-size:var(--fs-2xl); }
+.task-head p { color:var(--text-secondary); margin:0 0 var(--space-2); max-width:54rem; }
+.tier-bar { margin:var(--space-4) 0; }
+.tier-bar .label { text-transform:uppercase; letter-spacing:.06em; font-size:var(--fs-sm); color:var(--text-muted); }
+.seg { display:inline-flex; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:3px; gap:2px; }
+.seg .tier-option { position:relative; }
+.seg input { position:absolute; opacity:0; inset:0; margin:0; cursor:pointer; width:100%; height:100%; }
+.seg label { padding:5px 16px; border-radius:6px; color:var(--text-secondary); font-weight:500; cursor:pointer; display:block; }
+.seg input:checked + label { background:var(--surface); color:var(--accent); box-shadow:0 0 0 1px var(--border-strong), var(--elevation-1); }
+.seg input:checked + label::before { content:"\2713\00a0"; }
+.seg input:focus-visible + label { outline:2px solid var(--focus); outline-offset:1px; }
+.seg input:disabled { cursor:default; }
+.settings-layout { display:block; }
+.settings-layout.has-cats { display:grid; grid-template-columns:220px minmax(0,1fr); gap:var(--space-4); align-items:start; }
+.cat-nav { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:var(--space-4) var(--space-3); box-shadow:var(--elevation-1); position:sticky; top:var(--space-3); }
+.cat-nav .cat-title { text-transform:uppercase; letter-spacing:.08em; font-size:var(--fs-xs); color:var(--text-muted); font-weight:600; margin:0 0 var(--space-2) var(--space-2); }
+.cat-nav button { display:block; width:100%; text-align:left; background:none; border:0; border-left:3px solid transparent; padding:8px var(--space-3); font:inherit; font-weight:500; color:var(--text); border-radius:6px; cursor:pointer; position:relative; }
+.cat-nav button:hover { background:var(--surface-muted); }
+.cat-nav button[aria-current="true"] { background:var(--accent-soft); color:var(--accent); border-left-color:var(--accent); }
+.cat-nav hr { border:0; border-top:1px solid var(--border); margin:var(--space-2) var(--space-2); }
+.cat-nav .dot { position:absolute; right:10px; top:14px; width:8px; height:8px; border-radius:50%; background:var(--danger); }
+@media (max-width:820px) { .settings-layout.has-cats { grid-template-columns:1fr; } .cat-nav { position:static; } }
+.launch-bar { margin-bottom:var(--space-3); }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-card top-row">
+    <button class="brand" id="brandHome" type="button" aria-label="Home: choose what to do">
+      <span class="brand-logo" aria-hidden="true"><svg viewBox="0 0 24 24"><polyline points="3 12 7 12 10 5 14 19 17 12 21 12"/></svg></span>
+      <strong>PLGV</strong><small>Percona Load Generator for Valkey</small><small id="version"></small>
+    </button>
+    <span id="statusBadge" class="status-badge" role="status">idle</span>
+    <span class="top-spacer"></span>
+    <span class="run-clock" id="runClock" title="Elapsed / planned duration" aria-label="Run clock">00:00 / 00:00</span>
+    <button class="btn btn-small" id="histBtn" type="button">Completed Runs</button>
+    <button class="btn btn-small" id="exitBtn" type="button" title="Stop the PLGV server">Exit</button>
+  </div>
+  <nav class="tabs" id="mainTabs" role="tablist" aria-label="Sections" hidden>
+    <button role="tab" id="tab-settings" data-tab="settings" aria-selected="true">New run</button>
+    <button role="tab" id="tab-live" data-tab="live" aria-selected="false">Live Metrics</button>
+    <button role="tab" id="tab-latency" data-tab="latency" aria-selected="false">Latency Analysis</button>
+    <button role="tab" id="tab-server" data-tab="server" aria-selected="false">Server</button>
+    <button role="tab" id="tab-slowlog" data-tab="slowlog" aria-selected="false">Slowlog</button>
+    <button role="tab" id="tab-keyspace" data-tab="keyspace" aria-selected="false">Key Space</button>
+    <button role="tab" id="tab-insights" data-tab="insights" aria-selected="false">Insights<span id="insightCount" class="count" hidden></span></button>
+    <button role="tab" id="tab-history" data-tab="history" aria-selected="false">Run History</button>
+    <button role="tab" id="tab-compare" data-tab="compare" aria-selected="false">Compare Runs</button>
+    <button role="tab" id="tab-replay" data-tab="replay" aria-selected="false">Replay Comparison</button>
+    <button role="tab" id="tab-trends" data-tab="trends" aria-selected="false">Trends</button>
+  </nav>
+</header>
+<main>
+
+<!-- ============ Settings ============ -->
+<section id="panel-settings" data-panel="settings" role="tabpanel" aria-labelledby="tab-settings">
+  <!-- Front page: what do you want to do? -->
+  <div class="home" id="home">
+    <div class="eyebrow">Start a run</div>
+    <h2>What do you want to do?</h2>
+    <p class="lead">Generate Valkey traffic and measure throughput, latency and server behavior. Choose a workload to see only the settings it needs, with its defaults already selected; values that still apply (the server, workers, duration) carry over when you switch.</p>
+    <h3 class="group">Run a workload</h3>
+    <div class="task-grid" id="taskGrid"></div>
+    <h3 class="group">Typical applications</h3>
+    <div class="task-grid" id="presetGrid"></div>
+    <h3 class="group">Results and comparisons</h3>
+    <div class="task-grid" id="exploreGrid"></div>
+  </div>
+
+  <!-- A chosen workload: its settings -->
+  <div id="taskView" hidden>
+    <div class="taskbar">
+      <button class="btn btn-small" id="backHome" type="button">&larr; All workloads</button>
+      <label class="eyebrow" for="taskSel">Workload</label>
+      <select id="taskSel" aria-label="Workload type"></select>
+    </div>
+    <div class="task-head"><h2 id="taskTitle"></h2><p id="taskDesc"></p>
+      <button class="btn btn-small" id="taskReset" type="button">Reset to defaults</button></div>
+    <div class="tier-bar">
+      <span class="label">Settings level</span>
+      <span class="seg">
+        <span class="tier-option"><input type="checkbox" id="lvlBasic" checked disabled><label for="lvlBasic">Basic</label></span>
+        <span class="tier-option"><input type="checkbox" id="lvlAdvanced" aria-expanded="false"><label for="lvlAdvanced">Advanced</label></span>
+        <span class="tier-option"><input type="checkbox" id="lvlExpert" aria-expanded="false"><label for="lvlExpert">Expert</label></span>
+      </span>
+      <span class="settings-note" id="levelNote">Advanced and Expert settings are hidden. They are not reset: hidden settings still apply to the run with their current values.</span>
+    </div>
+    <div class="settings-layout" id="settingsLayout">
+      <nav class="cat-nav" id="catNav" aria-label="Settings categories" hidden></nav>
+      <div class="settings-cards" id="settingsCards">
+
+  <div class="card" data-level="basic" data-cat="basic" data-group="target">
+    <h3>Server <span class="level-tag">Basic</span></h3>
+    <div class="grid">
+      <div class="form-group grow"><label for="f-uri" id="uriLabel">Server address</label>
+        <input type="text" id="f-uri" style="width:100%" data-path="target.uris" data-kind="slist" placeholder="valkey://127.0.0.1:6379"></div>
+      <div class="form-group"><label for="f-mode">Deployment</label>
+        <select id="f-mode" data-path="target.mode"><option value="auto">auto: detect standalone or cluster</option><option value="standalone">standalone</option><option value="cluster">cluster</option><option value="sentinel">sentinel</option></select></div>
+      <div class="form-group" data-modeonly="sentinel" hidden><label for="f-smaster">Master name</label>
+        <input type="text" id="f-smaster" class="f-md" data-path="target.sentinel.master_name" placeholder="mymaster"></div>
+      <div class="field-check" data-modeonly="replicas"><input type="checkbox" id="f-replicas" data-path="target.read_from_replicas"><label for="f-replicas">Read from replicas</label></div>
+    </div>
+    <p class="settings-note" id="serverNote">One address for a standalone server, as <code>valkey://host:port</code> or <code>host:port</code>. For a <strong>cluster</strong> list one or more nodes (comma separated): plgv finds the rest, routes every command by its key's slot, and splits the results per node. For <strong>sentinel</strong> list the sentinels and give the master name; plgv follows the master through failovers. Multi-key commands in a cluster need <em>hash tag groups</em> (Advanced, Dataset details). Credentials are not entered here: set <code>PLGV_USERNAME</code> and <code>PLGV_PASSWORD</code> in the environment before starting <code>plgv web</code>.</p>
+  </div>
+
+  <div class="card" data-level="basic" data-cat="basic" data-group="run">
+    <h3>Run <span class="level-tag">Basic</span></h3>
+    <div class="grid">
+      <div class="form-group"><label for="f-duration">Duration</label><input type="text" id="f-duration" class="f-sm" data-path="run.duration" placeholder="10s"></div>
+      <div class="form-group"><label for="f-conc">Workers</label><input type="number" id="f-conc" class="f-xs" data-path="run.concurrency" min="1"></div>
+      <div class="form-group"><label for="f-label">Run label</label><input type="text" id="f-label" class="f-md" data-label="1" placeholder="optional name"></div>
+    </div>
+  </div>
+
+  <div class="card" data-level="basic" data-cat="basic" data-group="workload" id="mixCard">
+    <h3>Workload <span class="level-tag">Basic</span></h3>
+    <div class="form-group" style="margin-bottom:8px"><label for="presetSel">Start from a preset</label>
+      <select id="presetSel" class="f-md" aria-label="Workload preset"><option value="">None: build your own</option></select></div>
+    <p class="settings-note" id="presetNote">A preset fills in the operations and the dataset settings for a typical use. You can change anything afterwards: editing the operations turns the preset off.</p>
+    <p class="settings-note">Each worker repeatedly picks one of these operations in proportion to its weight. Counts and fields are optional parameters for the operations that take them.</p>
+    <table class="mix-table" id="mixTable" aria-label="Operation mix">
+      <thead><tr><th>Operation</th><th>Weight</th><th>Share</th><th>Parameters</th><th></th></tr></thead>
+      <tbody id="mixBody"></tbody>
+    </table>
+    <div class="toolbar" style="margin-top:12px">
+      <button class="btn btn-small" id="mixAdd" type="button">Add operation</button>
+      <span class="settings-note" id="mixErrors" role="alert"></span>
+    </div>
+  </div>
+
+  <div class="card" data-level="basic" data-cat="basic" data-group="dataset">
+    <h3>Dataset <span class="level-tag">Basic</span></h3>
+    <div class="grid">
+      <div class="form-group"><label for="f-keys">Keys per type</label><input type="number" id="f-keys" class="f-sm" data-path="dataset.key_count" min="1"></div>
+      <div class="form-group"><label for="f-dist">Key distribution</label>
+        <select id="f-dist" data-path="dataset.key_distribution"><option value="uniform">uniform</option><option value="zipf">zipf (a few hot keys)</option></select></div>
+      <div class="form-group"><label for="f-vsize">Value size (bytes)</label><input type="number" id="f-vsize" class="f-sm" data-path="dataset.value_size" min="1"></div>
+    </div>
+  </div>
+
+  <div class="card" data-level="basic" data-cat="basic" data-group="metrics" id="metricsCard">
+    <h3>Server metrics <span class="level-tag">Basic</span></h3>
+    <div class="field-check"><input type="checkbox" id="f-srv" data-path="server_metrics.enabled"><label for="f-srv">Collect server metrics</label></div>
+    <div class="note-box" id="srvNote" data-testid="server-metrics-note"><strong>Server metrics</strong>: Also reads statistics from the Valkey server during the run, so the results can explain <em>why</em> performance changed, not just what plgv measured. Once per interval (default 1 second) plgv sends three read-only commands: <code>INFO</code> (memory, hits and misses, evictions, connections), <code>SLOWLOG GET</code> (commands the server found slow) and <code>LATENCY LATEST</code>. It never changes server settings or clears logs. Cost: a few extra commands per second. Needs permission to run those commands. Off by default.</div>
+    <div id="srvOptions" hidden>
+      <div class="grid" style="margin-top:12px">
+        <div class="form-group"><label for="f-srvint">Polling interval</label><input type="text" id="f-srvint" class="f-sm" data-path="server_metrics.interval" placeholder="1s"></div>
+        <div class="field-check"><input type="checkbox" id="f-srvslow" data-path="server_metrics.slowlog"><label for="f-srvslow">Read SLOWLOG</label></div>
+        <div class="field-check"><input type="checkbox" id="f-srvlat" data-path="server_metrics.latency"><label for="f-srvlat">Read LATENCY LATEST</label></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" data-level="basic" data-cat="basic" data-group="saved">
+    <h3>Save and load run settings <span class="level-tag">Basic</span></h3>
+    <div class="toolbar" id="savedBar">
+      <label for="savedSelect">Saved settings</label>
+      <select id="savedSelect" class="f-md"><option value="">(none saved)</option></select>
+      <button class="btn btn-small" id="savedLoad" type="button">Load</button>
+      <button class="btn btn-small" id="savedDelete" type="button">Delete</button>
+      <input type="text" id="savedName" class="f-md" placeholder="Name to save as" aria-label="Name to save settings as">
+      <button class="btn btn-small" id="savedSave" type="button">Save current</button>
+      <span id="savedMsg" class="settings-note" role="status"></span>
+    </div>
+  </div>
+
+  <div class="card" data-level="advanced" data-cat="seed" data-group="seed" id="seedCard">
+    <h3>Seed and deterministic traffic <span class="level-tag">Advanced</span></h3>
+    <div class="grid">
+      <div class="form-group"><label for="f-seed">Random seed (0 = pick one)</label><input type="number" id="f-seed" class="f-md" data-path="run.seed" min="0"></div>
+      <div class="form-group"><label for="f-budget">Operation budget (0 = run for the duration)</label><input type="number" id="f-budget" class="f-sm" data-path="run.op_budget" min="0"></div>
+      <div class="field-check"><input type="checkbox" id="f-det" data-path="run.deterministic"><label for="f-det">Deterministic traffic</label></div>
+    </div>
+    <div class="note-box" id="detNote" data-testid="deterministic-note"><strong>Deterministic traffic</strong>: the same seed, operation budget and workload always send the same commands, and the run reports a traffic fingerprint that proves it. It needs a seed and a budget, one worker count for the whole run, and refuses operations that depend on the clock or on server replies (<code>PUBLISH</code>, <code>XCONSUME</code>, <code>WATCH_INCR</code>, <code>{now}</code>). Off by default. With a budget, the run ends when the operations are sent, not after the duration.</div>
+  </div>
+
+  <div class="card" data-level="advanced" data-cat="execution" data-group="pacing">
+    <h3>Pipelining and pacing <span class="level-tag">Advanced</span></h3>
+    <div class="grid">
+      <div class="form-group"><label for="f-pipe">Pipeline depth</label><input type="number" id="f-pipe" class="f-xs" data-path="target.pool.pipeline_depth" min="1"></div>
+      <div class="form-group"><label for="f-rate">Target rate (ops/s, 0 = unlimited)</label><input type="number" id="f-rate" class="f-sm" data-path="run.target_ops_per_sec" min="0"></div>
+      <div class="field-check"><input type="checkbox" id="f-co" data-path="run.coordinated_omission"><label for="f-co">Coordinated-omission latency</label></div>
+      <div class="form-group"><label for="f-loop">Loop</label>
+        <select id="f-loop" data-path="run.loop"><option value="closed">closed (default)</option><option value="open">open</option></select></div>
+    </div>
+    <p class="settings-note" id="loopNote"><strong>Closed loop:</strong> each worker sends its next batch when the previous one finishes, so a slow server slows the load down. <strong>Open loop:</strong> batches arrive at the target rate whether or not the server keeps up. Latency then includes the time a batch waited to be sent, and batches that never got sent are counted as dropped. The open loop needs a target rate.</p>
+    <p class="settings-note">Pipeline depth sends that many operations per round trip (each is charged the batch time). With a target rate, coordinated-omission latency is measured from each batch's intended start, so a stall shows its full delay. It needs a target rate.</p>
+  </div>
+
+  <div class="card" data-level="advanced" data-cat="execution" data-group="profile" id="profileCard">
+    <h3>Load profile <span class="level-tag">Advanced</span></h3>
+    <div class="grid">
+      <div class="form-group"><label for="f-pkind">Profile</label>
+        <select id="f-pkind" data-path="run.load_profile.kind">
+          <option value="fixed">fixed: Workers, all run long</option><option value="ramp">ramp: grow or shrink steadily</option>
+          <option value="step">step: hold counts for set times</option><option value="spike">spike: base load with a burst</option>
+          <option value="sine">sine: smooth periodic load</option></select></div>
+    </div>
+    <p class="settings-note" id="profileNote">A profile changes how many workers are active over time. <strong>Fixed</strong> uses <em>Workers</em> under Run. Pacing a changing number of workers with a target rate needs the open loop.</p>
+    <div class="sub-grid" data-profile="ramp" hidden>
+      <div class="form-group"><label for="f-rs">Start workers</label><input type="number" id="f-rs" class="f-xs" data-path="run.load_profile.start_workers" min="0"></div>
+      <div class="form-group"><label for="f-re">End workers</label><input type="number" id="f-re" class="f-xs" data-path="run.load_profile.end_workers" min="0"></div>
+      <div class="form-group"><label for="f-ro">Ramp over</label><input type="text" id="f-ro" class="f-sm" data-path="run.load_profile.ramp_over" placeholder="30s"></div>
+    </div>
+    <div class="sub-grid" data-profile="step" hidden>
+      <div class="form-group"><span class="label">Stages</span>
+        <table class="step-table" id="stepTable" aria-label="Load stages"><tbody id="stepBody"></tbody></table>
+        <div><button class="btn btn-small" id="stepAdd" type="button">Add stage</button></div></div>
+    </div>
+    <div class="sub-grid" data-profile="spike" hidden>
+      <div class="form-group"><label for="f-sb">Base workers</label><input type="number" id="f-sb" class="f-xs" data-path="run.load_profile.base_workers" min="0"></div>
+      <div class="form-group"><label for="f-sp">Peak workers</label><input type="number" id="f-sp" class="f-xs" data-path="run.load_profile.peak_workers" min="1"></div>
+      <div class="form-group"><label for="f-sa">Spike at</label><input type="text" id="f-sa" class="f-sm" data-path="run.load_profile.spike_at" placeholder="10s"></div>
+      <div class="form-group"><label for="f-sf">Spike for</label><input type="text" id="f-sf" class="f-sm" data-path="run.load_profile.spike_for" placeholder="5s"></div>
+    </div>
+    <div class="sub-grid" data-profile="sine" hidden>
+      <div class="form-group"><label for="f-nmin">Minimum workers</label><input type="number" id="f-nmin" class="f-xs" data-path="run.load_profile.min_workers" min="0"></div>
+      <div class="form-group"><label for="f-nmax">Maximum workers</label><input type="number" id="f-nmax" class="f-xs" data-path="run.load_profile.max_workers" min="1"></div>
+      <div class="form-group"><label for="f-nper">Period</label><input type="text" id="f-nper" class="f-sm" data-path="run.load_profile.period" placeholder="30s"></div>
+    </div>
+  </div>
+
+  <div class="card" data-level="advanced" data-cat="execution" data-group="sweep" id="sweepCard">
+    <h3>Sweep <span class="level-tag">Advanced</span></h3>
+    <div class="grid">
+      <div class="form-group"><label for="f-swkind">Sweep</label>
+        <select id="f-swkind" data-path="run.sweep.kind"><option value="none">off: one run</option><option value="workers">by worker count</option><option value="rate">by target rate</option></select></div>
+      <div class="form-group" data-sweep="on" hidden><label for="f-swvals" id="swValsLabel">Levels</label>
+        <input type="text" id="f-swvals" class="f-lg" data-path="run.sweep.values" data-kind="list" placeholder="4, 8, 16, 32"></div>
+      <div class="form-group" data-sweep="on" hidden><label for="f-swpause">Pause between runs</label>
+        <input type="text" id="f-swpause" class="f-sm" data-path="run.sweep.pause" placeholder="0s"></div>
+    </div>
+    <p class="settings-note" id="sweepNote">A sweep runs the same workload several times, once per level, and stores each as its own run. <strong>By worker count</strong> shows how throughput and latency change as concurrency grows and where more workers stop helping. <strong>By target rate</strong> shows where the server stops keeping up. <strong>Duration</strong> is the length of each run. Results appear in Compare Runs.</p>
+  </div>
+
+  <div class="card" data-level="advanced" data-cat="execution" data-group="pubsub" id="pubsubCard">
+    <h3>Pub/Sub subscribers <span class="level-tag">Advanced</span></h3>
+    <div class="grid">
+      <div class="form-group"><label for="f-psub">Subscribers</label><input type="number" id="f-psub" class="f-xs" data-path="workload.pubsub.subscribers" min="0"></div>
+      <div class="form-group"><label for="f-pch">Channels</label><input type="number" id="f-pch" class="f-xs" data-path="workload.pubsub.channels" min="1"></div>
+      <div class="field-check"><input type="checkbox" id="f-psh" data-path="workload.pubsub.sharded"><label for="f-psh">Sharded (SSUBSCRIBE / SPUBLISH)</label></div>
+    </div>
+    <p class="settings-note" id="pubsubNote">Add <code>PUBLISH</code> (or <code>SPUBLISH</code> when sharded) to the workload and set subscribers above 0: each subscriber listens to every channel, so each message is delivered once per subscriber. plgv measures the time from publishing to receipt and counts messages that never arrive. With 0 subscribers it only publishes.</p>
+  </div>
+
+  <div class="card" data-level="advanced" data-cat="data" data-group="raw" id="rawCard">
+    <h3>Raw commands <span class="level-tag">Advanced</span></h3>
+    <p class="settings-note">Run your own Valkey commands as the workload. One per line, optionally starting with a weight (<code>5 GET {key}</code>). Placeholders: <code>{key}</code> or <code>{key:hash}</code> (a random existing key), <code>{value}</code>, <code>{n}</code> (a key number), <code>{int:1-100}</code>, <code>{now}</code>. Quote text with spaces. Lines starting with <code>#</code> are ignored.</p>
+    <textarea id="rawText" rows="6" style="width:100%;font-family:var(--font-mono);font-size:12px" aria-label="Raw commands" placeholder="6 GET {key}&#10;2 SET {key} {value} EX 60&#10;1 HSET {key:hash} visits {n}"></textarea>
+    <div class="toolbar" style="margin-top:8px">
+      <button class="btn btn-small" id="rawReplace" type="button">Use as the workload</button>
+      <button class="btn btn-small" id="rawAdd" type="button">Add to the mix</button>
+      <label class="btn btn-small" for="rawFile">Load from a file</label><input type="file" id="rawFile" accept=".txt,.cmd,.redis,text/plain" hidden>
+      <span class="settings-note" id="rawMsg" role="status"></span>
+    </div>
+    <div class="field-check" style="margin-top:8px"><input type="checkbox" id="f-danger" data-path="workload.allow_dangerous"><label for="f-danger">Allow dangerous commands</label></div>
+    <div class="note-box" id="dangerNote" data-testid="dangerous-note"><strong>Blocked by default:</strong> commands that can delete data, change the server or stop it, such as <code>FLUSHALL</code>, <code>FLUSHDB</code>, <code>SHUTDOWN</code>, <code>DEBUG</code>, <code>CONFIG SET</code>, <code>CLIENT KILL</code>, <code>CLUSTER FAILOVER</code>, <code>SCRIPT FLUSH</code>, <code>REPLICAOF</code>. Tick the box only for a server you can afford to lose. Commands that would break plgv's own connections (<code>MULTI</code>, <code>SELECT</code>, <code>SUBSCRIBE</code>, blocking commands) are never allowed: use the TXN, WATCH_INCR, BRPOP and Pub/Sub operations instead.</div>
+  </div>
+
+  <div class="card" data-level="advanced" data-cat="connection" data-group="tls" id="tlsCard">
+    <h3>Encryption (TLS) <span class="level-tag">Advanced</span></h3>
+    <div class="field-check"><input type="checkbox" id="f-tls" data-path="target.tls.enabled"><label for="f-tls">Connect over TLS</label></div>
+    <div id="tlsOptions" class="grid" hidden>
+      <div class="form-group"><label for="f-tlsca">CA file (PEM; empty = the system's authorities)</label><input type="text" id="f-tlsca" class="f-lg" data-path="target.tls.ca_file" placeholder="/etc/plgv/ca.crt"></div>
+      <div class="form-group"><label for="f-tlscert">Client certificate (mutual TLS)</label><input type="text" id="f-tlscert" class="f-lg" data-path="target.tls.cert_file" placeholder="/etc/plgv/client.crt"></div>
+      <div class="form-group"><label for="f-tlskey">Client key</label><input type="text" id="f-tlskey" class="f-lg" data-path="target.tls.key_file" placeholder="/etc/plgv/client.key"></div>
+      <div class="form-group"><label for="f-tlsname">Server name (empty = the address's host)</label><input type="text" id="f-tlsname" class="f-md" data-path="target.tls.server_name"></div>
+      <div class="field-check"><input type="checkbox" id="f-tlsinsecure" data-path="target.tls.insecure_skip_verify"><label for="f-tlsinsecure">Do not verify the server certificate</label></div>
+    </div>
+    <div class="note-box" id="tlsNote" data-testid="tls-note"><strong>Files, not secrets:</strong> the fields hold file paths on the machine running plgv; keys and passwords are never stored in settings. The user name and password come from <code>PLGV_USERNAME</code> and <code>PLGV_PASSWORD</code>. A <code>valkeys://</code> address also turns TLS on. Skipping verification removes the protection against a man in the middle: use it for throwaway tests only.</div>
+  </div>
+
+  <div class="card" data-level="advanced" data-cat="metrics" data-group="keyspace" id="keyspaceCard">
+    <h3>Key-space analysis <span class="level-tag">Advanced</span></h3>
+    <div class="field-check"><input type="checkbox" id="f-ks" data-path="keyspace_analysis.enabled"><label for="f-ks">Analyze the key space after the run</label></div>
+    <div id="ksOptions" class="grid" hidden>
+      <div class="form-group"><label for="f-kssamples">Keys to inspect</label><input type="number" id="f-kssamples" class="f-sm" data-path="keyspace_analysis.samples" min="100" max="1000000"></div>
+      <div class="form-group"><label for="f-kstop">Biggest keys to list</label><input type="number" id="f-kstop" class="f-xs" data-path="keyspace_analysis.top" min="1" max="100"></div>
+      <div class="form-group"><label for="f-ksmatch">Key pattern (empty = the key prefix)</label><input type="text" id="f-ksmatch" class="f-md" data-path="keyspace_analysis.match" placeholder="plgv:*"></div>
+    </div>
+    <div class="note-box" id="ksSetNote" data-testid="keyspace-note"><strong>Key-space analysis</strong>: When the run ends, plgv samples keys on the server with <code>SCAN</code> and reads each one's type, size (<code>MEMORY USAGE</code>), expiry (<code>PTTL</code>) and length. The Key Space tab shows the types, sizes, expiry and the biggest keys, and the Insights tab warns about big keys. It only reads, never changes data, and runs after the measured part, so it does not affect the results. In a cluster every primary is scanned. Cost: a few commands per inspected key, on the server for a few seconds. Off by default.</div>
+  </div>
+
+  <div class="card" data-level="advanced" data-cat="data" data-group="dataset2">
+    <h3>Dataset details <span class="level-tag">Advanced</span></h3>
+    <div class="grid">
+      <div class="form-group"><label for="f-prefix">Key prefix</label><input type="text" id="f-prefix" class="f-md" data-path="dataset.key_prefix"></div>
+      <div class="form-group"><label for="f-zipf">Zipf skew (greater than 1)</label><input type="number" id="f-zipf" class="f-xs" data-path="dataset.zipf_s" step="0.1"></div>
+      <div class="form-group"><label for="f-coll">Collection size</label><input type="number" id="f-coll" class="f-xs" data-path="dataset.collection_size" min="1"></div>
+      <div class="form-group"><label for="f-hf">Hash fields</label><input type="number" id="f-hf" class="f-xs" data-path="dataset.hash_fields" min="1"></div>
+      <div class="form-group"><label for="f-tags">Hash tag groups (cluster)</label><input type="number" id="f-tags" class="f-xs" data-path="dataset.hash_tag_groups" min="0"></div>
+      <div class="form-group"><label for="f-stream">Stream length</label><input type="number" id="f-stream" class="f-xs" data-path="dataset.stream_length" min="1"></div>
+      <div class="form-group"><label for="f-bits">Bitmap bits</label><input type="number" id="f-bits" class="f-sm" data-path="dataset.bitmap_bits" min="8"></div>
+      <div class="field-check"><input type="checkbox" id="f-preload" data-path="dataset.preload"><label for="f-preload">Preload dataset</label></div>
+    </div>
+    <p class="settings-note" id="tagNote">With hash tag groups above 0, every key carries a <code>{group}</code> tag, so keys of one group share a cluster slot and <code>MGET</code>/<code>MSET</code> work in a cluster. 0 means no tags (a cluster then refuses multi-key commands, which would fail with CROSSSLOT).</p>
+    <div class="grid" style="margin-top:12px">
+      <div class="form-group"><label for="f-ttlmode">TTL mode</label>
+        <select id="f-ttlmode" data-path="dataset.ttl.mode"><option>none</option><option>fixed</option><option>random</option></select></div>
+      <div class="form-group"><label for="f-ttls">TTL seconds</label><input type="number" id="f-ttls" class="f-xs" data-path="dataset.ttl.seconds" min="1"></div>
+      <div class="form-group"><label for="f-ttlmin">Random min</label><input type="number" id="f-ttlmin" class="f-xs" data-path="dataset.ttl.min_seconds" min="1"></div>
+      <div class="form-group"><label for="f-ttlmax">Random max</label><input type="number" id="f-ttlmax" class="f-xs" data-path="dataset.ttl.max_seconds" min="1"></div>
+      <div class="form-group"><label for="f-ttlfrac">Share of SETs with TTL (0-1)</label><input type="number" id="f-ttlfrac" class="f-xs" data-path="dataset.ttl.fraction" step="0.1" min="0" max="1"></div>
+    </div>
+  </div>
+
+  <div class="card" data-level="advanced" data-cat="metrics" data-group="output">
+    <h3>Output <span class="level-tag">Advanced</span></h3>
+    <div class="grid">
+      <div class="form-group"><label for="f-sample">Chart sample interval</label><input type="text" id="f-sample" class="f-sm" data-path="output.sample_interval" placeholder="1s"></div>
+    </div>
+  </div>
+
+  <div class="card" data-level="expert" data-cat="connection" data-group="client">
+    <h3>Client library <span class="level-tag">Expert</span></h3>
+    <div class="grid">
+      <div class="form-group"><label for="f-client">Client library</label>
+        <select id="f-client" data-path="target.client"><option>valkey-go</option><option>go-redis</option></select></div>
+    </div>
+    <p class="settings-note">valkey-go supports standalone, cluster and Sentinel; go-redis supports standalone only.</p>
+  </div>
+
+  <div class="card" data-level="expert" data-cat="metrics" data-group="polling">
+    <h3>Server polling <span class="level-tag">Expert</span></h3>
+    <div class="grid">
+      <div class="form-group"><label for="f-slowN">Slowlog entries per poll</label><input type="number" id="f-slowN" class="f-xs" data-path="server_metrics.slowlog_entries" min="1" max="10000"></div>
+    </div>
+  </div>
+
+      </div><!-- settings-cards -->
+    </div><!-- settings-layout -->
+
+  <div class="launch-bar" id="launchBar">
+    <div class="summary" id="launchSummary"></div>
+    <button class="btn btn-primary" id="startBtn" type="button">Start workload</button>
+    <button class="btn btn-danger" id="stopBtn" type="button" hidden>Stop</button>
+  </div>
+  <div id="startErrors" class="inline-error" role="alert" hidden style="margin-top:12px"></div>
+  </div><!-- taskView -->
+</section>
+
+<!-- ============ Live ============ -->
+<section id="panel-live" data-panel="live" role="tabpanel" aria-labelledby="tab-live" hidden>
+  <h2>Live Metrics</h2>
+  <div id="viewBanner"></div>
+  <div id="liveEmpty" class="empty">No run yet. Start one from Settings, or open a stored run from Run History.</div>
+  <div id="liveBody" hidden>
+    <div id="sweepBanner"></div>
+    <div id="phaseLine" class="settings-note" role="status"></div>
+    <div class="progress" aria-hidden="true"><div id="progressBar"></div></div>
+    <div class="kpis" id="liveKpis"></div>
+    <div class="tm" id="tm-live" data-tm="live"></div>
+    <div class="charts">
+      <div class="chart-card"><h3>Throughput (ops/s)</h3><div class="chart-box"><canvas id="ch-throughput"></canvas></div></div>
+      <div class="chart-card"><h3>Latency (ms)</h3><div class="chart-box"><canvas id="ch-latency"></canvas></div></div>
+      <div class="chart-card"><h3>Errors per slice</h3><div class="chart-box"><canvas id="ch-errors"></canvas></div></div>
+      <div class="chart-card"><h3>Active workers</h3><div class="chart-box"><canvas id="ch-workers"></canvas></div></div>
+    </div>
+    <h3 style="margin-top:16px">Per operation</h3>
+    <p class="settings-note" id="opNote">For most operations a miss is a read that found nothing. For <code>WATCH_INCR</code> it is an aborted (conflicting) transaction, and for blocking reads (<code>BLPOP</code>, <code>BRPOP</code>, <code>XREAD_BLOCK</code>) a timeout.</p>
+    <table class="data" id="opTable"><thead><tr><th>Operation</th><th class="num">Ops</th><th class="num">Share</th><th class="num">Misses</th><th class="num">Errors</th><th class="num" id="opP99Head">p99</th></tr></thead><tbody></tbody></table>
+  </div>
+</section>
+
+<!-- ============ Latency ============ -->
+<section id="panel-latency" data-panel="latency" role="tabpanel" aria-labelledby="tab-latency" hidden>
+  <h2>Latency Analysis</h2>
+  <div id="latEmpty" class="empty">Latency analysis is available for a finished run. Run a workload or open one from Run History.</div>
+  <div id="latBody" hidden>
+    <div class="kpis" id="latKpis"></div>
+    <p class="settings-note" id="latNote"></p>
+    <div class="tm" id="tm-latency" data-tm="latency"></div>
+    <div class="charts"><div class="chart-card"><h3>Latency over time (ms)</h3><div class="chart-box"><canvas id="ch-lat2"></canvas></div></div></div>
+    <div id="psBlock" hidden>
+      <h3 style="margin-top:16px">Pub/sub delivery</h3>
+      <div class="kpis" id="psKpis"></div>
+      <div class="charts"><div class="chart-card"><h3>Delivery latency over time (ms)</h3><div class="chart-box"><canvas id="ch-pubsub"></canvas></div></div></div>
+    </div>
+    <h3 style="margin-top:16px">By operation</h3>
+    <table class="data" id="latTable"><thead><tr><th>Operation</th><th class="num">Ops</th><th class="num">p50</th><th class="num">p95</th><th class="num">p99</th><th class="num">max</th></tr></thead><tbody></tbody></table>
+  </div>
+</section>
+
+<!-- ============ Server ============ -->
+<section id="panel-server" data-panel="server" role="tabpanel" aria-labelledby="tab-server" hidden>
+  <h2>Server</h2>
+  <div id="srvEmpty" class="empty"></div>
+  <div id="srvBody" hidden>
+    <div class="kpis" id="srvKpis"></div>
+    <div class="tm" id="tm-server" data-tm="server"></div>
+    <div id="srvTopology" hidden>
+      <h3>Nodes</h3>
+      <table class="data" id="nodeTable"><thead><tr><th>Address</th><th>Role</th><th class="num">Slots</th><th class="num">plgv ops</th><th class="num">Share</th><th class="num">Errors</th><th class="num">Server ops</th><th class="num">Memory</th></tr></thead><tbody></tbody></table>
+      <h3 style="margin-top:16px">Topology changes during the run</h3>
+      <div id="topoEvents"></div>
+      <div class="charts" style="margin-top:16px">
+        <div class="chart-card"><h3>Server ops/s per node</h3><div class="chart-box"><canvas id="ch-nodeops"></canvas></div></div>
+        <div class="chart-card"><h3>plgv ops/s per node</h3><div class="chart-box"><canvas id="ch-clientnodes"></canvas></div></div>
+      </div>
+    </div>
+    <div class="charts">
+      <div class="chart-card"><h3>Server ops/s vs plgv ops/s</h3><div class="chart-box"><canvas id="ch-srvops"></canvas></div></div>
+      <div class="chart-card"><h3>Memory (MiB)</h3><div class="chart-box"><canvas id="ch-srvmem"></canvas></div></div>
+      <div class="chart-card"><h3>Hit ratio (%)</h3><div class="chart-box"><canvas id="ch-srvhit"></canvas></div></div>
+      <div class="chart-card"><h3>Connected and blocked clients</h3><div class="chart-box"><canvas id="ch-srvconn"></canvas></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ Slowlog ============ -->
+<section id="panel-slowlog" data-panel="slowlog" role="tabpanel" aria-labelledby="tab-slowlog" hidden>
+  <h2>Slowlog</h2>
+  <div id="slowEmpty" class="empty"></div>
+  <div id="slowBody" hidden>
+    <p class="settings-note">Commands the server logged as slow during this run. Only entries added after the run started are shown. The threshold is the server's <code>slowlog-log-slower-than</code> setting.</p>
+    <table class="data" id="slowTable"><thead><tr><th>Time</th><th class="num">Duration</th><th>Command</th></tr></thead><tbody></tbody></table>
+    <h3 style="margin-top:16px">Latency monitor events</h3>
+    <div id="latEvents"></div>
+  </div>
+</section>
+
+<!-- ============ Key Space ============ -->
+<section id="panel-keyspace" data-panel="keyspace" role="tabpanel" aria-labelledby="tab-keyspace" hidden>
+  <h2>Key Space</h2>
+  <div id="ksEmpty" class="empty"></div>
+  <div id="ksBody" hidden>
+    <p class="settings-note" id="ksNote"></p>
+    <div class="kpis" id="ksKpis"></div>
+    <h3 style="margin-top:16px">By type</h3>
+    <table class="data" id="ksTypes"><thead><tr><th>Type</th><th class="num">Keys</th><th class="num">Share</th><th class="num">Avg size</th><th class="num">Max size</th><th class="num">Max elements</th></tr></thead><tbody></tbody></table>
+    <div class="charts" style="margin-top:16px">
+      <div class="chart-card"><h3>Key size</h3><div id="ksSizes" class="hist"></div></div>
+      <div class="chart-card"><h3>Time to expiry</h3><div id="ksTTL" class="hist"></div></div>
+    </div>
+    <h3 style="margin-top:16px">Biggest keys</h3>
+    <table class="data" id="ksBig"><thead><tr><th>Key</th><th>Type</th><th class="num">Size</th><th class="num">Elements</th><th class="num">Expires in</th></tr></thead><tbody></tbody></table>
+  </div>
+</section>
+
+<!-- ============ Insights ============ -->
+<section id="panel-insights" data-panel="insights" role="tabpanel" aria-labelledby="tab-insights" hidden>
+  <h2>Insights</h2>
+  <div id="insEmpty" class="empty">Insights are available for a finished run.</div>
+  <div id="insBody" hidden></div>
+</section>
+
+<!-- ============ History ============ -->
+<section id="panel-history" data-panel="history" role="tabpanel" aria-labelledby="tab-history" hidden>
+  <h2>Run History</h2>
+  <div class="toolbar">
+    <button class="btn btn-small" id="histCompare" type="button" disabled>Compare selected</button>
+    <span class="settings-note" id="histNote">Select two runs to compare them.</span>
+  </div>
+  <div id="histEmpty" class="empty" hidden>No finished runs yet.</div>
+  <table class="data" id="histTable" hidden>
+    <thead><tr><th></th><th>Run</th><th>Started</th><th class="num">Duration</th><th class="num">ops/s</th><th class="num">p99</th><th class="num">Errors</th><th>Findings</th><th></th></tr></thead>
+    <tbody></tbody>
+  </table>
+</section>
+
+<!-- ============ Compare ============ -->
+<section id="panel-compare" data-panel="compare" role="tabpanel" aria-labelledby="tab-compare" hidden>
+  <h2>Compare Runs</h2>
+  <div class="toolbar">
+    <label for="cmpA">Run A</label><select id="cmpA" class="f-lg"></select>
+    <label for="cmpB">Run B</label><select id="cmpB" class="f-lg"></select>
+    <button class="btn btn-primary btn-small" id="cmpGo" type="button">Compare</button>
+  </div>
+  <div id="cmpMsg" class="empty">Pick two runs. Differences are shown as B relative to A.</div>
+  <div id="cmpBody" hidden></div>
+  <h2 style="margin-top:32px" id="sweepHeading">Sweep results</h2>
+  <div class="toolbar">
+    <label for="sweepSelect">Sweep</label><select id="sweepSelect" class="f-lg"></select>
+    <button class="btn btn-small" id="sweepGo" type="button">Show sweep</button>
+  </div>
+  <div id="sweepMsg" class="empty">No sweeps yet. Pick "Find the limit" on the front page, or set Sweep under Advanced > Workload execution, to run one workload at several worker counts or target rates.</div>
+  <div id="sweepBody" hidden></div>
+</section>
+
+<!-- ============ Replay Comparison ============ -->
+<section id="panel-replay" data-panel="replay" role="tabpanel" aria-labelledby="tab-replay" hidden>
+  <h2>Replay Comparison</h2>
+  <p class="settings-note">Compare replays of the same recording on different servers or versions. Choose the JSON files <code>plgv replay -summary</code> wrote (one per server, or one file from <code>-targets</code>). The files are read in your browser and sent to this page's server only to be compared; nothing is stored. The first replay is the baseline.</p>
+  <div class="toolbar">
+    <label for="rpFiles">Replay summaries</label><input type="file" id="rpFiles" accept="application/json,.json" multiple>
+    <label for="rpTol">Unchanged within</label><input type="number" id="rpTol" class="f-xs" min="0" max="1000" value="10"><span class="settings-note">%</span>
+  </div>
+  <div id="rpMsg" class="empty">Choose two or more replay summaries to compare. See docs/replay-comparison.md for how to make them.</div>
+  <div id="rpBody" hidden></div>
+</section>
+
+<!-- ============ Trends ============ -->
+<section id="panel-trends" data-panel="trends" role="tabpanel" aria-labelledby="tab-trends" hidden>
+  <h2>Trends</h2>
+  <p class="settings-note">Runs of the same workload (same operations, dataset and client settings) are grouped. The newest run is compared with the median of up to five runs before it.</p>
+  <div class="toolbar"><label for="trendGroup">Workload</label><select id="trendGroup" class="f-lg"></select></div>
+  <div id="trendEmpty" class="empty" hidden></div>
+  <div id="trendBody" hidden>
+    <div id="trendFlags"></div>
+    <div class="charts">
+      <div class="chart-card"><h3>Throughput (ops/s)</h3><div class="chart-box"><canvas id="ch-tr-ops"></canvas></div></div>
+      <div class="chart-card"><h3>p99 latency (ms)</h3><div class="chart-box"><canvas id="ch-tr-p99"></canvas></div></div>
+      <div class="chart-card"><h3>Hit ratio (%)</h3><div class="chart-box"><canvas id="ch-tr-hit"></canvas></div></div>
+    </div>
+  </div>
+</section>
+
+</main>
+<script>
+'use strict';
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+function el(tag, props, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') n.className = v;
+    else if (k === 'text') n.textContent = v;
+    else if (k.startsWith('on')) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v === true ? '' : v);
+  }
+  for (const k of kids.flat()) if (k != null) n.append(k.nodeType ? k : document.createTextNode(String(k)));
+  return n;
+}
+function clear(n) { while (n.firstChild) n.removeChild(n.firstChild); return n; }
+const nf = new Intl.NumberFormat('en-US');
+const fmtInt = v => nf.format(Math.round(v || 0));
+const fmtMs = v => (v == null || isNaN(v)) ? '-' : (v < 10 ? v.toFixed(2) : v < 100 ? v.toFixed(1) : v.toFixed(0)) + ' ms';
+const fmtOps = v => fmtInt(v) + '/s';
+const fmtPct = v => (v == null || v < 0) ? '-' : (v * 100).toFixed(1) + '%';
+const fmtMiB = b => (b / 1048576).toFixed(1) + ' MiB';
+const fmtTime = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleString(); };
+function getPath(o, path) {
+  return path.replace(/\[(\d+)\]/g, '.$1').split('.').reduce((a, k) => (a == null ? undefined : a[k]), o);
+}
+function setPath(o, path, v) {
+  const keys = path.replace(/\[(\d+)\]/g, '.$1').split('.');
+  let cur = o;
+  keys.forEach((k, i) => {
+    if (i === keys.length - 1) { cur[k] = v; return; }
+    if (cur[k] == null) cur[k] = /^\d+$/.test(keys[i + 1]) ? [] : {};
+    cur = cur[k];
+  });
+}
+async function api(method, url, body) {
+  const init = { method, headers: {} };
+  if (body !== undefined) { init.headers['Content-Type'] = 'application/json'; init.body = JSON.stringify(body); }
+  const r = await fetch(url, init);
+  let data = {};
+  try { data = await r.json(); } catch (e) { /* empty body */ }
+  return { ok: r.ok, status: r.status, data };
+}
+function store(key, val) { try { localStorage.setItem(key, val); } catch (e) { /* private mode */ } }
+function recall(key) { try { return localStorage.getItem(key); } catch (e) { return null; } }
+
+/* ---------- state ---------- */
+const S = {
+  defaults: null, ops: {}, opNames: [], cfg: null, label: '',
+  tab: 'settings', home: true, task: null, cat: 'basic', autoConc: null, live: { state: 'idle' }, view: null, viewId: null,
+  runs: [], histSel: [], trends: null, lastState: 'idle', polling: null,
+};
+const ACTIVE = ['connecting', 'preloading', 'running', 'finishing'];
+const isActive = () => ACTIVE.includes(S.live.state);
+
+/* ---------- charts ---------- */
+const charts = {};
+// Vertical lines for events (failover, reshard...) drawn over a time chart.
+const markerPlugin = {
+  id: 'plgvMarkers',
+  afterDatasetsDraw(chart) {
+    const marks = chart.$markers || []; const xs = chart.scales && chart.scales.x; if (!xs || !marks.length) return;
+    const ctx = chart.ctx, area = chart.chartArea;
+    marks.forEach(m => {
+      const px = xs.getPixelForValue(m.x);
+      if (!(px >= area.left && px <= area.right)) return;
+      ctx.save(); ctx.strokeStyle = '#b91c1c'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+      ctx.beginPath(); ctx.moveTo(px, area.top); ctx.lineTo(px, area.bottom); ctx.stroke();
+      ctx.setLineDash([]); ctx.fillStyle = '#b91c1c'; ctx.font = '11px sans-serif'; ctx.fillText(m.label, Math.min(px + 4, area.right - 60), area.top + 12);
+      ctx.restore();
+    });
+  },
+};
+function eventMarkers(vm) {
+  const t = vm && vm.server && vm.server.topology;
+  return t ? (t.events || []).map(e => ({ x: e.offset_s, label: e.kind })) : [];
+}
+function drawChart(id, sets, unit, opts = {}) {
+  const canvas = document.getElementById(id);
+  if (!canvas || typeof Chart === 'undefined') return;
+  const data = { datasets: sets.map(s => ({ label: s.label, data: s.data, borderColor: s.color, backgroundColor: s.color, borderWidth: 1.6, pointRadius: opts.points ? 3 : 0, tension: 0.15, spanGaps: true })) };
+  if (opts.labels) data.labels = opts.labels;
+  const zoomable = !opts.labels && opts.zoom !== false;
+  const markers = opts.markers || [];
+  const applyRange = ch => {
+    if (!zoomable || !ch.options || !ch.options.scales) return;
+    const xs = ch.options.scales.x;
+    if (S.range) { xs.min = S.range.from; xs.max = S.range.to; } else { delete xs.min; delete xs.max; }
+  };
+  if (charts[id]) { charts[id].data = data; charts[id].$markers = markers; applyRange(charts[id]); charts[id].update('none'); return; }
+  charts[id] = new Chart(canvas, {
+    type: 'line', data, plugins: [markerPlugin],
+    options: {
+      animation: false, responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } },
+      scales: {
+        x: opts.labels ? { title: { display: true, text: opts.xTitle || '' } } : { type: 'linear', title: { display: true, text: 'seconds' } },
+        y: { beginAtZero: true, title: { display: true, text: unit || '' } },
+      },
+    },
+  });
+  charts[id].$markers = markers;
+  if ((S.range && zoomable) || markers.length) { applyRange(charts[id]); charts[id].update('none'); } // markers are drawn on update // a new chart opened on a zoomed range
+}
+function resizeCharts() { Object.values(charts).forEach(c => { try { c.resize(); } catch (e) { /* hidden */ } }); }
+const COLORS = { sky: '#1486ff', sun: '#f0b336', fire: '#f24500', green: '#059669', purple: '#8b5cf6', stone: '#697793' };
+const xy = (pts, xk, yk) => pts.map(p => ({ x: p[xk], y: p[yk] }));
+
+/* ---------- Time Machine: look at a time range of a run ---------- */
+function tmMax(series) { return Math.max(1, Math.ceil((series[series.length - 1] || {}).offset_s || 1)); }
+function renderTimeMachine(tab, series) {
+  const box = $('#tm-' + tab); if (!box) return;
+  const max = tmMax(series);
+  if (S.range && S.range.to > max + 1) S.range = null;
+  const r = S.range;
+  const from = r ? r.from : 0, to = r ? r.to : max;
+  const slider = (id, label, val, onchange) => el('label', { class: 'tm-range' }, label,
+    el('input', { type: 'range', id, min: '0', max: String(max), step: '1', value: String(val), 'aria-label': label, onchange }));
+  clear(box).append(
+    el('strong', { text: 'Time Machine' }),
+    slider(`tm-from-${tab}`, 'From', from, e => setRange(Number(e.target.value), null, series)),
+    slider(`tm-to-${tab}`, 'To', to, e => setRange(null, Number(e.target.value), series)),
+    el('span', { id: `tm-label-${tab}`, text: r ? `${from}s to ${to}s of ${max}s` : `whole run (${max}s)` }),
+    el('button', { class: 'btn btn-small', type: 'button', id: `tm-reset-${tab}`, text: 'Show whole run', hidden: !r, onclick: () => { S.range = null; renderTab(S.tab); } }),
+    el('span', { class: 'tm-stats', id: `tm-stats-${tab}`, text: rangeStats(series, from, to) }));
+}
+function setRange(from, to, series) {
+  const max = tmMax(series);
+  const cur = S.range || { from: 0, to: max };
+  let f = from == null ? cur.from : from, t = to == null ? cur.to : to;
+  if (f >= t) { if (from != null) t = Math.min(max, f + 1); else f = Math.max(0, t - 1); }
+  S.range = (f <= 0 && t >= max) ? null : { from: f, to: t };
+  renderTab(S.tab);
+}
+function rangeStats(series, from, to) {
+  const pts = series.filter(p => p.offset_s >= from && p.offset_s <= to);
+  if (!pts.length) return 'No data in this range.';
+  const avg = pts.reduce((a, p) => a + p.ops_per_sec, 0) / pts.length;
+  const p99 = Math.max(...pts.map(p => p.p99_ms));
+  const errs = pts.reduce((a, p) => a + (p.errors || 0), 0);
+  return `In this range: average ${fmtOps(avg)}, worst p99 ${fmtMs(p99)}, ${fmtInt(errs)} errors, ${pts.length} slice${pts.length === 1 ? '' : 's'}.`;
+}
+
+/* ---------- tabs ---------- */
+function showTab(name) {
+  S.tab = name;
+  $$('[data-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+  $$('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== name; });
+  if (name === 'history') loadHistory();
+  if (name === 'compare') { loadHistory().then(fillCompareSelects); loadSweeps(); }
+  if (name === 'trends') loadTrends();
+  renderShell();
+  renderTab(name);
+  setTimeout(resizeCharts, 0);
+}
+$$('[data-tab]').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+// The front page shows only the header and the workload cards; the section tabs
+// appear once a workload is chosen or another section is opened.
+function renderShell() {
+  const onHome = S.tab === 'settings' && S.home;
+  $('#mainTabs').hidden = onHome;
+  $('#home').hidden = !S.home;
+  $('#taskView').hidden = S.home;
+}
+function goHome() { S.home = true; showTab('settings'); window.scrollTo(0, 0); }
+$('#brandHome').addEventListener('click', goHome);
+$('#backHome').addEventListener('click', goHome);
+$('#histBtn').addEventListener('click', () => showTab('history'));
+$('#exitBtn').addEventListener('click', async () => {
+  if (!confirm('Stop the PLGV server? A run in progress is stopped.')) return;
+  await api('POST', '/api/shutdown', {});
+  document.body.replaceChildren(el('main', {}, el('div', { class: 'empty' }, el('h2', { text: 'PLGV has stopped' }), el('p', { text: 'You can close this tab. Start it again with plgv web.' }))));
+});
+
+/* ---------- settings form ---------- */
+const LEVELS = { advanced: false, expert: false };
+// Settings categories: with Advanced or Expert on, a list on the left picks one
+// category at a time; with only Basic on, the basic cards are all shown.
+const CATS = [
+  { id: 'basic', title: 'Basic settings' }, { id: 'connection', title: 'Connection' }, { id: 'execution', title: 'Workload execution' },
+  { id: 'data', title: 'Data and commands' }, { id: 'seed', title: 'Seed and deterministic' }, { id: 'metrics', title: 'Metrics and reporting' },
+];
+const levelOn = lv => lv === 'basic' || !!LEVELS[lv];
+function visibleCats() { return CATS.filter(c => $$(`[data-cat="${c.id}"]`).some(card => levelOn(card.dataset.level))); }
+function errorCats() { const s = new Set(); $$('#taskView [aria-invalid]').forEach(i => { const c = i.closest('[data-cat]'); if (c) s.add(c.dataset.cat); }); return s; }
+function renderCats(cats) {
+  const nav = clear($('#catNav')); const bad = errorCats();
+  nav.append(el('div', { class: 'cat-title', text: 'Categories' }));
+  cats.forEach((c, i) => {
+    nav.append(el('button', { type: 'button', 'data-cat-btn': c.id, 'aria-current': String(c.id === S.cat), onclick: () => { S.cat = c.id; applyLevels(); } }, c.title, bad.has(c.id) ? el('span', { class: 'dot', title: 'Has a problem' }) : null));
+    if (i === 0) nav.append(el('hr'));
+  });
+}
+function applyLevels() {
+  const multi = LEVELS.advanced || LEVELS.expert;
+  const cats = visibleCats();
+  if (!cats.find(c => c.id === S.cat)) S.cat = 'basic';
+  $$('[data-level][data-cat]').forEach(c => { c.hidden = !levelOn(c.dataset.level) || (multi && c.dataset.cat !== S.cat); });
+  $('#catNav').hidden = !multi; $('#settingsLayout').classList.toggle('has-cats', multi);
+  if (multi) renderCats(cats);
+  $('#lvlAdvanced').setAttribute('aria-expanded', String(LEVELS.advanced));
+  $('#lvlExpert').setAttribute('aria-expanded', String(LEVELS.expert));
+  $('#lvlAdvanced').checked = LEVELS.advanced; $('#lvlExpert').checked = LEVELS.expert;
+  const shown = ['basic', LEVELS.advanced && 'advanced', LEVELS.expert && 'expert'].filter(Boolean);
+  const hidden = [!LEVELS.advanced && 'Advanced', !LEVELS.expert && 'Expert'].filter(Boolean);
+  $('#levelNote').textContent = `Showing ${shown.join(' and ')} settings.` + (hidden.length
+    ? ` ${hidden.join(' and ')} settings are hidden. They are not reset: hidden settings still apply to the run with their current values.` : '');
+}
+function setLevel(name, on) { LEVELS[name] = on; store('plgv.levels', JSON.stringify(LEVELS)); applyLevels(); }
+$('#lvlAdvanced').addEventListener('change', e => setLevel('advanced', e.target.checked));
+$('#lvlExpert').addEventListener('change', e => setLevel('expert', e.target.checked));
+
+function populateInputs() {
+  $$('[data-path]').forEach(inp => {
+    const p = inp.dataset.path;
+    if (p.startsWith('workload.mix')) return;
+    const v = getPath(S.cfg, p);
+    if (inp.type === 'checkbox') inp.checked = !!v;
+    else if (inp.dataset.kind === 'list' || inp.dataset.kind === 'slist') inp.value = Array.isArray(v) ? v.join(', ') : (v == null ? '' : String(v));
+    else inp.value = v == null ? '' : v;
+  });
+  $('#f-label').value = S.label;
+  syncPreset(); syncKeySpace(); syncTLS();
+  syncSrvOptions(); syncProfile(); syncSweep(); syncMode(); renderSteps(); renderMix(); updateSummary();
+}
+function onInput(e) {
+  const inp = e.target;
+  if (!inp.dataset || !inp.dataset.path) { if (inp.dataset && inp.dataset.label) { S.label = inp.value; } return; }
+  const p = inp.dataset.path;
+  let v;
+  if (inp.type === 'checkbox') v = inp.checked;
+  else if (inp.dataset.kind === 'list') v = inp.value.split(/[\s,;]+/).filter(Boolean).map(Number);
+  else if (inp.dataset.kind === 'slist') v = inp.value.split(/[\s,;]+/).filter(Boolean);
+  else if (inp.type === 'number') v = inp.value === '' ? 0 : Number(inp.value);
+  else v = inp.value;
+  setPath(S.cfg, p, v);
+  clearError(inp);
+  if (p === 'server_metrics.enabled') syncSrvOptions();
+  if (p === 'keyspace_analysis.enabled') syncKeySpace();
+  if (p === 'target.tls.enabled') syncTLS();
+  if (p === 'run.load_profile.kind') syncProfile();
+  if (p === 'run.sweep.kind') syncSweep();
+  if (p === 'target.mode') syncMode();
+  updateSummary();
+}
+document.addEventListener('input', e => { if (e.target.closest('#panel-settings')) onInput(e); });
+document.addEventListener('change', e => { if (e.target.closest('#panel-settings') && e.target.tagName === 'SELECT' && e.target.dataset.path) onInput(e); });
+function syncMode() {
+  const mode = getPath(S.cfg, 'target.mode') || 'auto';
+  $$('[data-modeonly="sentinel"]').forEach(n => { n.hidden = mode !== 'sentinel'; });
+  $$('[data-modeonly="replicas"]').forEach(n => { n.hidden = mode === 'standalone'; });
+  $('#uriLabel').textContent = mode === 'cluster' ? 'Seed nodes' : mode === 'sentinel' ? 'Sentinel addresses' : mode === 'standalone' ? 'Server address' : 'Server address (or cluster seed nodes)';
+}
+function syncProfile() {
+  const kind = getPath(S.cfg, 'run.load_profile.kind') || 'fixed';
+  $$('[data-profile]').forEach(n => { n.hidden = n.dataset.profile !== kind; });
+}
+function syncSweep() {
+  const kind = getPath(S.cfg, 'run.sweep.kind') || 'none';
+  $$('[data-sweep="on"]').forEach(n => { n.hidden = kind === 'none'; });
+  $('#swValsLabel').textContent = kind === 'rate' ? 'Target rates (ops/s)' : 'Worker counts';
+  $('#f-swvals').placeholder = kind === 'rate' ? '10000, 20000, 40000' : '4, 8, 16, 32';
+}
+function renderSteps() {
+  const body = clear($('#stepBody'));
+  const steps = getPath(S.cfg, 'run.load_profile.steps') || [];
+  steps.forEach((st, i) => body.append(el('tr', { 'data-step-row': i },
+    el('td', {}, el('input', { type: 'number', min: '0', value: st.workers, class: 'f-xs', 'aria-label': 'Stage ' + (i + 1) + ' workers', 'data-step-index': i, 'data-step-field': 'workers' })),
+    el('td', { text: 'workers for' }),
+    el('td', {}, el('input', { type: 'text', value: st.duration, class: 'f-sm', 'aria-label': 'Stage ' + (i + 1) + ' duration', 'data-step-index': i, 'data-step-field': 'duration', placeholder: '10s' })),
+    el('td', {}, el('button', { class: 'btn btn-small', type: 'button', 'aria-label': 'Remove stage', 'data-step-remove': i, text: 'Remove', onclick: () => { S.cfg.run.load_profile.steps.splice(i, 1); renderSteps(); } })))));
+}
+$('#stepBody').addEventListener('input', e => {
+  const t = e.target; if (!t.dataset.stepField) return;
+  const st = S.cfg.run.load_profile.steps[Number(t.dataset.stepIndex)];
+  st[t.dataset.stepField] = t.dataset.stepField === 'workers' ? Number(t.value || 0) : t.value;
+  clearError(t);
+});
+$('#stepAdd').addEventListener('click', () => {
+  const lp = S.cfg.run.load_profile; lp.steps = lp.steps || [];
+  lp.steps.push({ workers: 8, duration: '10s' }); renderSteps();
+});
+function syncSrvOptions() { $('#srvOptions').hidden = !getPath(S.cfg, 'server_metrics.enabled'); }
+
+function updateSummary() {
+  const c = S.cfg; if (!c) return;
+  const mix = (c.workload && c.workload.mix) || [];
+  const sw = getPath(c, 'run.sweep.kind'); const swv = getPath(c, 'run.sweep.values') || [];
+  const pk = getPath(c, 'run.load_profile.kind') || 'fixed';
+  const parts = [
+    sw && sw !== 'none' ? `sweep of ${swv.length} runs by ${sw === 'rate' ? 'target rate' : 'worker count'}, ${getPath(c, 'run.duration')} each`
+      : `${pk === 'fixed' ? getPath(c, 'run.concurrency') + ' workers' : pk + ' profile'} for ${getPath(c, 'run.duration')}`,
+    getPath(c, 'run.loop') === 'open' ? 'open loop' : null,
+    `${mix.length} operation${mix.length === 1 ? '' : 's'}`,
+    (getPath(c, 'target.mode') && getPath(c, 'target.mode') !== 'auto' && getPath(c, 'target.mode') !== 'standalone' ? getPath(c, 'target.mode') + ' ' : '') + ((getPath(c, 'target.uris') || []).join(', ') || 'no server address'),
+    'server metrics ' + (getPath(c, 'server_metrics.enabled') ? 'on' : 'off'),
+  ].filter(Boolean);
+  const t = S.task && taskDef(S.task); if (t) parts.unshift(t.title);
+  $('#launchSummary').textContent = parts.join(' · ');
+}
+
+/* ---------- operation mix builder ---------- */
+const FAMILIES = ['string', 'key', 'hash', 'list', 'set', 'zset', 'stream', 'geo', 'hll', 'bitmap', 'script', 'pubsub', 'txn', 'raw'];
+const FAMILY_LABEL = { string: 'Strings', key: 'Keys', hash: 'Hashes', list: 'Lists', set: 'Sets', zset: 'Sorted sets', stream: 'Streams', geo: 'Geo', hll: 'HyperLogLog', bitmap: 'Bitmaps', script: 'Lua and functions', pubsub: 'Pub/Sub', txn: 'Transactions and pipelines', raw: 'Raw command' };
+const TYPES = ['string', 'hash', 'list', 'set', 'zset', 'stream', 'geo', 'hll', 'bitmap'];
+const SCRIPTS = ['rate_limit', 'incr_cap', 'get_set'];
+const isStepOp = n => { const i = S.ops[n]; return i && (!i.Kind || i.Kind === 'simple') && i.Family !== 'raw' && i.Family !== 'pubsub'; };
+function opSelect(value, idx, stepJ) {
+  const attrs = { 'aria-label': stepJ == null ? 'Operation' : 'Step operation', 'data-mix-index': idx, 'data-mix-field': 'op', class: 'f-md' };
+  if (stepJ != null) attrs['data-mstep'] = stepJ;
+  const sel = el('select', attrs);
+  FAMILIES.forEach(f => {
+    const names = S.opNames.filter(n => S.ops[n].Family === f && (stepJ == null || isStepOp(n)));
+    if (!names.length) return;
+    const g = el('optgroup', { label: FAMILY_LABEL[f] });
+    names.forEach(n => g.append(el('option', { value: n, text: n })));
+    sel.append(g);
+  });
+  sel.value = value;
+  return sel;
+}
+function mixInput(idx, field, value, label, opts = {}) {
+  const type = opts.type || 'number';
+  const attrs = { type, value: value == null ? '' : value, class: opts.cls || 'f-xs', 'aria-label': label, 'data-mix-index': idx, 'data-mix-field': field, placeholder: opts.ph || label };
+  if (type === 'number') attrs.min = '1';
+  if (opts.step != null) attrs['data-mstep'] = opts.step;
+  return el('input', attrs);
+}
+function typeSelect(idx, value, stepJ) {
+  const attrs = { 'aria-label': 'Key type', 'data-mix-index': idx, 'data-mix-field': 'type', class: 'f-sm' };
+  if (stepJ != null) attrs['data-mstep'] = stepJ;
+  const t = el('select', attrs, ...TYPES.map(x => el('option', { value: x, text: x })));
+  t.value = value || 'string';
+  return t;
+}
+function resetParams(m) {
+  ['count', 'fields', 'type', 'timeout', 'script', 'source', 'args', 'steps', 'command'].forEach(k => delete m[k]);
+  const info = S.ops[m.op] || {};
+  if (info.Steps) m.steps = [{ op: 'GET' }, { op: 'SET' }];
+  if (info.Script) m.script = 'rate_limit';
+  if (info.Command) m.command = 'GET {key}';
+}
+function stepsEditor(m, i) {
+  const box = el('div', { class: 'steps', 'data-steps-of': i });
+  (m.steps || []).forEach((st, j) => {
+    const sinfo = S.ops[st.op] || {};
+    const row = el('div', { class: 'step-row', 'data-step-row': j }, opSelect(st.op, i, j));
+    if (sinfo.Count) row.append(' ', mixInput(i, 'count', st.count, 'count', { step: j }));
+    if (sinfo.Fields) row.append(' ', mixInput(i, 'fields', st.fields, 'fields', { step: j }));
+    if (sinfo.Type) row.append(' ', typeSelect(i, st.type, j));
+    row.append(' ', el('button', { class: 'btn btn-small', type: 'button', 'aria-label': 'Remove step', 'data-step-remove': j, text: '×', onclick: () => { m.steps.splice(j, 1); renderMix(); updateSummary(); } }));
+    box.append(row);
+  });
+  box.append(el('button', { class: 'btn btn-small', type: 'button', 'data-step-add': i, text: 'Add step', onclick: () => { m.steps = m.steps || []; m.steps.push({ op: 'GET' }); renderMix(); updateSummary(); } }));
+  return box;
+}
+function paramCell(m, i) {
+  const info = S.ops[m.op] || {};
+  const cell = el('td', {});
+  if (info.Count) cell.append(mixInput(i, 'count', m.count, 'count'), ' ');
+  if (info.Fields) cell.append(mixInput(i, 'fields', m.fields, 'fields'), ' ');
+  if (info.Type) cell.append(typeSelect(i, m.type), ' ');
+  if (info.Timeout) cell.append(mixInput(i, 'timeout', m.timeout, 'timeout', { type: 'text', ph: '1s' }), ' ');
+  if (info.Script) {
+    const inline = !m.script;
+    const sel = el('select', { 'aria-label': 'Script', 'data-mix-index': i, 'data-mix-field': 'script', class: 'f-sm' },
+      ...SCRIPTS.map(x => el('option', { value: x, text: x })), el('option', { value: '', text: 'inline Lua' }));
+    sel.value = inline ? '' : m.script;
+    cell.append(sel, ' ');
+    cell.append(mixInput(i, 'args', (m.args || []).join(', '), 'arguments', { type: 'text', ph: 'arguments (optional)', cls: 'f-md' }), ' ');
+    if (inline) cell.append(el('div', {}, el('textarea', { 'aria-label': 'Lua source', 'data-mix-index': i, 'data-mix-field': 'source', rows: '3', class: 'f-lg', style: 'font-family:var(--font-mono);font-size:12px', text: m.source || '' })));
+  }
+  if (info.Steps) cell.append(stepsEditor(m, i));
+  if (info.Command) cell.append(mixInput(i, 'command', m.command, 'command', { type: 'text', ph: 'GET {key}', cls: 'f-lg' }));
+  return cell;
+}
+function renderMix() {
+  const body = clear($('#mixBody'));
+  const mix = S.cfg.workload.mix;
+  const total = mix.reduce((a, m) => a + (Number(m.weight) || 0), 0);
+  mix.forEach((m, i) => {
+    const share = total > 0 ? ((Number(m.weight) || 0) / total * 100).toFixed(0) + '%' : '-';
+    body.append(el('tr', { 'data-mix-row': i },
+      el('td', {}, opSelect(m.op, i)),
+      el('td', {}, el('input', { type: 'number', min: '1', value: m.weight, class: 'f-xs', 'aria-label': 'Weight', 'data-mix-index': i, 'data-mix-field': 'weight' })),
+      el('td', {}, el('span', { class: 'mix-share', text: share })),
+      paramCell(m, i),
+      el('td', {}, el('button', { class: 'btn btn-small', type: 'button', 'aria-label': 'Remove operation', 'data-mix-remove': i, text: 'Remove', onclick: () => { clearPreset(); S.cfg.workload.mix.splice(i, 1); renderMix(); updateSummary(); } }))));
+  });
+  $('#mixErrors').textContent = mix.length ? '' : 'Add at least one operation.';
+}
+$('#mixBody').addEventListener('change', onMixEdit);
+$('#mixBody').addEventListener('input', e => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') onMixEdit(e, true); });
+function onMixEdit(e, noRender) {
+  const t = e.target; if (!t.dataset.mixField) return;
+  clearPreset();
+  const m = S.cfg.workload.mix[Number(t.dataset.mixIndex)]; if (!m) return;
+  const f = t.dataset.mixField;
+  const stepJ = t.dataset.mstep != null ? Number(t.dataset.mstep) : null;
+  clearError(t);
+  const target = stepJ == null ? m : (m.steps || [])[stepJ];
+  if (!target) return;
+  if (f === 'op') {
+    target.op = t.value;
+    if (stepJ == null) resetParams(m);
+    else ['count', 'fields', 'type'].forEach(k => delete target[k]);
+    renderMix();
+  } else if (f === 'type') { target.type = t.value; }
+  else if (f === 'script') {
+    if (t.value) { m.script = t.value; delete m.source; } else { m.script = ''; m.source = m.source || "return redis.call('GET', KEYS[1])"; }
+    delete m.args;
+    renderMix();
+  } else if (f === 'source' || f === 'command' || f === 'timeout') {
+    if (t.value === '' && f !== 'source') delete target[f]; else target[f] = t.value;
+  } else if (f === 'args') {
+    const a = t.value.split(/[\s,]+/).filter(Boolean);
+    if (a.length) m.args = a; else delete m.args;
+  } else {
+    const n = t.value === '' ? 0 : Number(t.value);
+    if (n > 0) target[f] = n; else if (f === 'weight') m.weight = 0; else delete target[f];
+    if (f === 'weight' && !noRender) renderMix();
+    else if (f === 'weight') { const total = S.cfg.workload.mix.reduce((a, x) => a + (Number(x.weight) || 0), 0); $$('#mixBody tr[data-mix-row]').forEach((tr, i) => { tr.querySelector('.mix-share').textContent = total ? ((Number(S.cfg.workload.mix[i].weight) || 0) / total * 100).toFixed(0) + '%' : '-'; }); }
+  }
+  updateSummary();
+}
+$('#mixAdd').addEventListener('click', () => { clearPreset(); S.cfg.workload.mix.push({ op: 'GET', weight: 1 }); renderMix(); updateSummary(); });
+
+/* ---------- presets ---------- */
+function fillPresets() {
+  const sel = $('#presetSel');
+  (S.presets || []).forEach(p => sel.append(el('option', { value: p.name, text: p.title })));
+}
+function syncTLS() { const t = S.cfg.target && S.cfg.target.tls; $('#tlsOptions').hidden = !(t && t.enabled); }
+function syncKeySpace() { $('#ksOptions').hidden = !(S.cfg.keyspace_analysis && S.cfg.keyspace_analysis.enabled); }
+function syncPreset() {
+  const name = (S.cfg.workload && S.cfg.workload.preset) || '';
+  $('#presetSel').value = name;
+  const p = (S.presets || []).find(x => x.name === name);
+  $('#presetNote').textContent = p ? p.description + ' Editing the operations turns the preset off.' : 'A preset fills in the operations and the dataset settings for a typical use. You can change anything afterwards: editing the operations turns the preset off.';
+}
+function clearPreset() { if (S.cfg.workload.preset) { delete S.cfg.workload.preset; syncPreset(); if (S.task && S.task.startsWith('preset:')) { S.task = 'custom'; renderTask(); } } }
+function applyPreset(name) {
+  const p = (S.presets || []).find(x => x.name === name);
+  if (!p) { clearPreset(); return; }
+  S.cfg.workload = JSON.parse(JSON.stringify(p.workload)); S.cfg.workload.preset = p.name;
+  S.cfg.dataset = JSON.parse(JSON.stringify(p.dataset));
+  if (p.concurrency !== S.defaults.run.concurrency) S.cfg.run.concurrency = p.concurrency;
+  populateInputs();
+}
+$('#presetSel').addEventListener('change', e => { applyPreset(e.target.value); S.task = e.target.value ? 'preset:' + e.target.value : 'custom'; renderTask(); });
+
+/* ---------- workload tasks (the front page) ---------- */
+const ICONS = {
+  db: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  bolt: '<polygon points="13 2 4 14 12 14 11 22 20 10 12 10 13 2"/>',
+  user: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  bars: '<line x1="6" y1="20" x2="6" y2="11"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/>',
+  list: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  radio: '<circle cx="12" cy="12" r="2"/><path d="M16.2 7.8a6 6 0 0 1 0 8.4M7.8 16.2a6 6 0 0 1 0-8.4M19 5a10 10 0 0 1 0 14M5 19a10 10 0 0 1 0-14"/>',
+  plus: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>',
+  box: '<path d="M21 16V8l-9-5-9 5v8l9 5 9-5z"/><polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/>',
+  shuffle: '<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/>',
+  sliders: '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
+  terminal: '<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>',
+  gauge: '<path d="M12 14l4-4"/><path d="M3.3 17a10 10 0 1 1 17.4 0"/>',
+  clock: '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  columns: '<rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/>',
+  repeat: '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
+  trend: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+};
+const RAW_EXAMPLE = '6 GET {key}\n2 SET {key} {value} EX 60\n1 HSET {key:hash} visits {n}';
+const PRESET_ICON = { cache: 'bolt', session: 'user', leaderboard: 'bars', queue: 'list', 'rate-limiter': 'shield', 'pubsub-fanout': 'radio', counters: 'plus', 'big-keys': 'box', mixed: 'shuffle' };
+function icon(name) {
+  const span = el('span', { class: 'task-icon', 'aria-hidden': 'true' });
+  span.innerHTML = '<svg viewBox="0 0 24 24">' + (ICONS[name] || ICONS.db) + '</svg>';
+  return span;
+}
+// Every kind of workload the front page offers. Presets come from the server's list.
+function taskDefs() {
+  return [
+    { id: 'standard', group: 'general', title: 'Standard workload', icon: 'db', desc: '80% GET and 20% SET on string keys: the quickest way to see what a server can do.' },
+    { id: 'custom', group: 'general', title: 'Custom workload', icon: 'sliders', desc: 'Build your own operation mix from every command family, with weights.' },
+    { id: 'raw', group: 'general', title: 'Your own commands', icon: 'terminal', desc: 'Paste Valkey commands and run them as the workload.' },
+    { id: 'sweep', group: 'general', title: 'Find the limit', icon: 'gauge', desc: 'Run the same workload at 4, 16, 64 and 128 workers to see where throughput stops growing.' },
+    ...(S.presets || []).map(p => ({ id: 'preset:' + p.name, group: 'preset', title: p.title, icon: PRESET_ICON[p.name] || 'db', desc: p.description })),
+  ];
+}
+const taskDef = id => taskDefs().find(t => t.id === id);
+function fillTasks() {
+  clear($('#taskGrid')); clear($('#presetGrid'));
+  taskDefs().forEach(t => (t.group === 'preset' ? $('#presetGrid') : $('#taskGrid')).append(el('div', { class: 'task-card', 'data-task': t.id },
+    el('button', { type: 'button', class: 'task-main', onclick: () => selectTask(t.id) }, icon(t.icon), el('span', {}, el('strong', { text: t.title }), el('span', { class: 'd', text: t.desc }))),
+    el('button', { type: 'button', class: 'task-defaults', text: 'Use defaults', title: 'Start this workload from the default settings (your server address is kept)', onclick: () => selectTask(t.id, true) }))));
+  const go = (tab, ic, title, desc) => el('div', { class: 'task-card dashed', 'data-explore': tab },
+    el('button', { type: 'button', class: 'task-main', onclick: () => showTab(tab) }, icon(ic), el('span', {}, el('strong', { text: title }), el('span', { class: 'd', text: desc }))), el('span', { class: 'task-arrow', text: '\u2192' }));
+  clear($('#exploreGrid')).append(
+    go('history', 'clock', 'Open completed runs', 'Reopen stored dashboards, reports and exports of earlier runs.'),
+    go('compare', 'columns', 'Compare runs', 'Put two runs, or a sweep, side by side.'),
+    go('replay', 'repeat', 'Compare replays', 'Compare replays of one recording on different servers.'),
+    go('trends', 'trend', 'Trends', 'See whether the latest run is slower than the last few.'));
+  const sel = clear($('#taskSel'));
+  taskDefs().forEach(t => sel.append(el('option', { value: t.id, text: t.title })));
+}
+// A reset keeps where the run connects (address, mode, TLS, client) and puts every other setting back.
+function resetToDefaults() {
+  const old = S.cfg.target || {};
+  S.cfg = JSON.parse(JSON.stringify(S.defaults));
+  ['uris', 'mode', 'sentinel', 'tls', 'read_from_replicas', 'client'].forEach(k => { if (old[k] !== undefined) S.cfg.target[k] = JSON.parse(JSON.stringify(old[k])); });
+  S.label = ''; S.autoConc = null;
+}
+// The settings that belong to the kind of workload; everything else is kept.
+function applyTaskDefaults(id) {
+  const d = JSON.parse(JSON.stringify(S.defaults));
+  if (S.autoConc !== null && S.cfg.run.concurrency === S.autoConc) S.cfg.run.concurrency = d.run.concurrency; // undo the previous workload's worker count
+  S.autoConc = null;
+  S.cfg.run.sweep = d.run.sweep; S.cfg.workload = d.workload; S.cfg.dataset = d.dataset;
+  if (id.startsWith('preset:')) {
+    const pr = (S.presets || []).find(x => x.name === id.slice(7));
+    applyPreset(id.slice(7));
+    if (pr && pr.concurrency !== d.run.concurrency) S.autoConc = pr.concurrency; // the workload chose the worker count
+  } else if (id === 'sweep') {
+    S.cfg.run.sweep = { kind: 'workers', values: [4, 16, 64, 128], pause: d.run.sweep.pause };
+    LEVELS.advanced = true; S.cat = 'execution';
+  } else if (id === 'raw') {
+    LEVELS.advanced = true; S.cat = 'data';
+  }
+  populateInputs();
+  if (id === 'raw') { if (!$('#rawText').value.trim()) $('#rawText').value = RAW_EXAMPLE; applyRaw(true); }
+  if (id === 'sweep') { populateInputs(); }
+}
+function selectTask(id, reset) {
+  if (isActive()) return; // the cards are locked while a run is going
+  if (!taskDef(id)) id = 'standard';
+  if (reset) resetToDefaults();
+  S.task = id; S.home = false;
+  if (id !== 'sweep' && id !== 'raw') S.cat = 'basic';
+  applyTaskDefaults(id);
+  store('plgv.levels', JSON.stringify(LEVELS));
+  clearAllErrors(); $('#startErrors').hidden = true;
+  renderTask(); showTab('settings'); window.scrollTo(0, 0);
+}
+function renderTask() {
+  const t = S.task && taskDef(S.task);
+  if (!t) return;
+  $('#taskTitle').textContent = t.title; $('#taskDesc').textContent = t.desc;
+  $('#taskSel').value = t.id;
+  applyLevels(); updateSummary();
+}
+$('#taskSel').addEventListener('change', e => selectTask(e.target.value));
+$('#taskReset').addEventListener('click', () => selectTask(S.task || 'standard', true));
+
+/* ---------- raw command injector ---------- */
+function parseRawLines(text) {
+  const out = [];
+  text.split('\n').forEach(raw => {
+    const line = raw.trim(); if (!line || line.startsWith('#')) return;
+    let weight = 1, cmd = line;
+    const m = /^(\d+)x?\s+(.*)$/.exec(line);
+    if (m && Number(m[1]) >= 1) { weight = Number(m[1]); cmd = m[2].trim(); }
+    out.push({ op: 'RAW', weight, command: cmd });
+  });
+  return out;
+}
+function rawNote(msg, bad) { const n = $('#rawMsg'); n.textContent = msg; n.style.color = bad ? 'var(--danger)' : ''; }
+function applyRaw(replace) {
+  const items = parseRawLines($('#rawText').value);
+  if (!items.length) { rawNote('Enter at least one command (one per line).', true); return; }
+  clearPreset();
+  S.cfg.workload.mix = replace ? items : S.cfg.workload.mix.concat(items);
+  renderMix(); updateSummary();
+  rawNote(`${replace ? 'The workload is now' : 'Added'} ${items.length} raw command${items.length === 1 ? '' : 's'}. Commands that are blocked or invalid are reported when you start the run.`);
+}
+$('#rawReplace').addEventListener('click', () => applyRaw(true));
+$('#rawAdd').addEventListener('click', () => applyRaw(false));
+$('#rawFile').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { $('#rawText').value = String(rd.result); rawNote(`Loaded ${f.name}. Choose "Use as the workload" or "Add to the mix".`); };
+  rd.readAsText(f);
+});
+
+/* ---------- validation errors ---------- */
+function clearError(inp) {
+  inp.removeAttribute('aria-invalid');
+  const nxt = inp.nextElementSibling;
+  if (nxt && nxt.classList.contains('field-error')) nxt.remove();
+}
+function clearAllErrors() {
+  $$('#panel-settings [aria-invalid]').forEach(clearError);
+  $$('#panel-settings .field-error').forEach(n => n.remove());
+  const box = $('#startErrors'); box.hidden = true; clear(box);
+}
+function findField(path) {
+  let m = path.match(/^workload\.mix\[(\d+)\]\.steps\[(\d+)\]\.(\w+)$/);
+  if (m) return $(`[data-mix-index="${m[1]}"][data-mstep="${m[2]}"][data-mix-field="${m[3]}"]`) || $(`[data-mix-index="${m[1]}"][data-mstep="${m[2]}"]`);
+  m = path.match(/^workload\.mix\[(\d+)\]\.(\w+)$/);
+  if (m) return $(`[data-mix-index="${m[1]}"][data-mix-field="${m[2]}"]:not([data-mstep])`) || $(`[data-mix-row="${m[1]}"] [data-mix-field="op"]`);
+  m = path.match(/^target\.uris(\[\d+\])?$/);
+  if (m) return $('[data-path="target.uris"]');
+  m = path.match(/^run\.sweep\.values(\[\d+\])?$/);
+  if (m) return $('[data-path="run.sweep.values"]');
+  m = path.match(/^run\.load_profile\.steps\[(\d+)\]\.(\w+)$/);
+  if (m) return $(`[data-step-index="${m[1]}"][data-step-field="${m[2]}"]`);
+  if (path === 'run.load_profile') return $('[data-path="run.load_profile.kind"]');
+  return $(`[data-path="${path}"]`);
+}
+// Make a field reachable: turn its level on and, unless keepCat, open its category.
+function revealField(inp, keepCat) {
+  const card = inp.closest('[data-level]');
+  if (!card) return;
+  if (!levelOn(card.dataset.level)) { LEVELS[card.dataset.level] = true; store('plgv.levels', JSON.stringify(LEVELS)); }
+  if (card.dataset.cat && !keepCat) S.cat = card.dataset.cat;
+  S.home = false; renderShell(); applyLevels();
+}
+// Open the settings at the field: pick a workload if none is chosen, turn its level on, open its category.
+function openSetting(sel) {
+  const inp = $(sel);
+  if (!S.task) S.task = 'standard';
+  revealField(inp); renderTask(); showTab('settings'); inp.focus();
+}
+function showErrors(errs, headline) {
+  clearAllErrors();
+  const loose = [];
+  let opened = false; // the first problem's category opens; the others are marked in the list
+  errs.forEach(e => {
+    const inp = e.path && findField(e.path);
+    if (inp) {
+      revealField(inp, opened); opened = true;
+      inp.setAttribute('aria-invalid', 'true');
+      inp.after(el('div', { class: 'field-error', role: 'alert', text: e.message }));
+    } else loose.push(e);
+  });
+  const box = $('#startErrors');
+  clear(box);
+  box.append(el('div', { text: headline || 'The settings need attention.' }));
+  const first = $('#panel-settings [aria-invalid]');
+  if (loose.length || !first) {
+    const ul = el('ul', {}); (loose.length ? loose : errs).forEach(e => ul.append(el('li', { text: (e.path ? e.path + ': ' : '') + e.message }))); box.append(ul);
+  }
+  box.hidden = false;
+  applyLevels();
+  if (first && first.focus) first.focus();
+}
+
+/* ---------- saved settings ---------- */
+async function loadSavedList(selectName) {
+  const r = await api('GET', '/api/settings');
+  const sel = clear($('#savedSelect'));
+  const names = (r.data && r.data.settings) || [];
+  if (!names.length) sel.append(el('option', { value: '', text: '(none saved)' }));
+  names.forEach(n => sel.append(el('option', { value: n, text: n })));
+  if (selectName) sel.value = selectName;
+}
+function savedMsg(t, bad) { const m = $('#savedMsg'); m.textContent = t; m.style.color = bad ? 'var(--danger)' : ''; }
+$('#savedLoad').addEventListener('click', async () => {
+  const name = $('#savedSelect').value; if (!name) return;
+  const r = await api('GET', '/api/settings/' + encodeURIComponent(name));
+  if (!r.ok) { savedMsg(r.data.error || 'Could not load.', true); return; }
+  S.cfg = r.data.config; clearAllErrors(); populateInputs(); savedMsg(`Loaded "${name}".`);
+});
+$('#savedSave').addEventListener('click', async () => {
+  const name = $('#savedName').value.trim();
+  if (!name) { savedMsg('Enter a name to save as.', true); return; }
+  const r = await api('PUT', '/api/settings/' + encodeURIComponent(name), { config: S.cfg });
+  if (!r.ok) { savedMsg((r.data.errors && r.data.errors[0] && r.data.errors[0].message) || r.data.error || 'Could not save.', true); return; }
+  await loadSavedList(name); $('#savedName').value = ''; savedMsg(`Saved "${name}". Credentials are never saved.`);
+});
+$('#savedDelete').addEventListener('click', async () => {
+  const name = $('#savedSelect').value; if (!name) return;
+  const r = await api('DELETE', '/api/settings/' + encodeURIComponent(name));
+  if (r.ok) { await loadSavedList(); savedMsg(`Deleted "${name}".`); } else savedMsg('Could not delete.', true);
+});
+
+/* ---------- start / stop ---------- */
+$('#startBtn').addEventListener('click', async () => {
+  clearAllErrors();
+  $('#startBtn').setAttribute('aria-busy', 'true');
+  const r = await api('POST', '/api/start', { config: S.cfg, label: S.label });
+  $('#startBtn').removeAttribute('aria-busy');
+  if (r.status === 202) { S.view = null; S.viewId = null; S.range = null; await pollLive(); showTab('live'); return; }
+  if (r.status === 400) { showErrors(r.data.errors || [], 'The workload was not started: fix these settings.'); return; }
+  showErrors([{ message: r.data.error || 'Could not start the run.' }], 'The workload was not started.');
+});
+$('#stopBtn').addEventListener('click', async () => { await api('POST', '/api/stop', {}); });
+
+/* ---------- live polling ---------- */
+async function pollLive() {
+  const r = await api('GET', '/api/live');
+  if (!r.ok) return;
+  const prev = S.lastState;
+  S.live = r.data;
+  S.lastState = r.data.state;
+  updateStatus();
+  if (r.data.state === 'done' && r.data.run_id && !S.view && (ACTIVE.includes(prev) || prev === 'idle')) await onRunDone(r.data.run_id);
+  if (isActive() || prev !== S.lastState) renderTab(S.tab);
+}
+async function onRunDone(id) {
+  const r = await api('GET', '/api/runs/' + id);
+  if (r.ok) { S.view = r.data; S.viewId = id; S.range = null; }
+  await loadHistory();
+  updateStatus();
+  renderTab(S.tab);
+}
+function updateStatus() {
+  const st = S.live.state;
+  const b = $('#statusBadge');
+  const text = { idle: 'idle', connecting: 'connecting', preloading: 'preloading dataset', running: 'running', finishing: 'finishing', done: 'finished', error: 'error' }[st] || st;
+  b.textContent = text;
+  b.className = 'status-badge' + (isActive() ? ' active' : st === 'done' ? ' done' : st === 'error' ? ' error' : '');
+  const mmss = sec => { sec = Math.max(0, Math.round(sec || 0)); return String(Math.floor(sec / 60)).padStart(2, '0') + ':' + String(sec % 60).padStart(2, '0'); };
+  // While a run goes the clock counts it; after it, it shows the finished run's real length.
+  const live = isActive() || st === 'done' || st === 'error';
+  const elapsed = isActive() ? S.live.elapsed_seconds : (S.view && S.view.client ? S.view.client.elapsed_seconds : S.live.elapsed_seconds);
+  $('#runClock').textContent = live ? `${mmss(elapsed)} / ${mmss(S.live.duration_seconds)}` : '00:00 / 00:00';
+  $('#startBtn').disabled = isActive();
+  $$('.task-main, .task-defaults').forEach(b => { b.disabled = isActive(); });
+  $('#taskSel').disabled = isActive(); $('#taskReset').disabled = isActive();
+  $('#stopBtn').hidden = !isActive();
+}
+
+/* ---------- the displayed run (live or stored) ---------- */
+function viewModel() {
+  if (isActive() || (!S.view && (S.live.state === 'error' || S.live.state === 'done'))) {
+    const l = S.live;
+    return { mode: 'live', label: l.label, series: l.series || [], perOp: (l.per_op || []).map(o => ({ op: o.op, ops: o.ops, errors: o.errors, misses: o.misses, p99_ms: o.p99_ms })),
+      ops: l.ops, errors: l.errors, misses: l.misses, server: l.server ? { ...l.server, live: true } : null, serverOn: l.server_metrics, findings: [], live: l };
+  }
+  if (S.view) {
+    const v = S.view;
+    return { mode: 'stored', id: S.viewId, label: v.label, series: v.series || [], perOp: v.per_op || [], ops: v.client.ops, errors: v.client.errors, misses: v.client.misses,
+      server: v.server || null, serverOn: !!v.server, findings: v.findings || [], summary: v };
+  }
+  return null;
+}
+function renderTab(name) {
+  ({ live: renderLive, latency: renderLatency, server: renderServer, slowlog: renderSlowlog, keyspace: renderKeySpace, insights: renderInsights }[name] || (() => {}))();
+  updateInsightBadge();
+}
+function banner(vm) {
+  const b = clear($('#viewBanner'));
+  if (!vm) return;
+  if (vm.mode === 'stored') {
+    const s = vm.summary;
+    const text = `Showing ${vm.label ? '"' + vm.label + '"' : 'run ' + vm.id}, started ${fmtTime(s.started_at)}${s.stopped ? ' (stopped early)' : ''}.`;
+    b.append(el('div', { class: 'banner' + (s.stopped ? ' warn' : '') }, text,
+      el('a', { href: '/api/runs/' + vm.id + '/report', target: '_blank', rel: 'noopener', text: 'Open report' }),
+      el('a', { href: '/api/runs/' + vm.id + '/report?download=1', text: 'Download report' })));
+  }
+}
+
+/* ---------- sweep banner ---------- */
+function sweepUnit(kind) { return kind === 'rate' ? 'ops/s' : 'workers'; }
+function renderSweepBanner() {
+  const box = clear($('#sweepBanner'));
+  const l = S.live;
+  const sw = isActive() || !S.view ? l.sweep : null;
+  if (sw && (isActive() || l.state === 'done')) {
+    const running = isActive();
+    const txt = running
+      ? `Sweep of ${sw.total} runs by ${sw.kind === 'rate' ? 'target rate' : 'worker count'}. Level ${sw.index} of ${sw.total}: ${sw.value} ${sweepUnit(sw.kind)}.`
+      : `Sweep finished: ${sw.total} runs.`;
+    const b = el('div', { class: 'banner', 'data-testid': 'sweep-banner' }, txt);
+    if (!running) b.append(el('button', { class: 'btn btn-small', type: 'button', id: 'sweepCompareBtn', text: 'Compare this sweep', onclick: () => openSweep(sw.id) }));
+    box.append(b);
+    return;
+  }
+  const info = S.view && S.view.sweep;
+  if (info) {
+    box.append(el('div', { class: 'banner', 'data-testid': 'sweep-banner' }, `This run is level ${info.index} of ${info.total} of a sweep by ${info.kind === 'rate' ? 'target rate' : 'worker count'} (${info.value} ${sweepUnit(info.kind)}).`,
+      el('button', { class: 'btn btn-small', type: 'button', id: 'sweepCompareBtn', text: 'Compare this sweep', onclick: () => openSweep(info.id) })));
+  }
+}
+
+/* ---------- Live Metrics ---------- */
+function kpi(k, v, s) { return el('div', { class: 'kpi' }, el('div', { class: 'k', text: k }), el('div', { class: 'v', text: v }), s ? el('div', { class: 's', text: s }) : null); }
+function renderLive() {
+  const vm = viewModel();
+  $('#liveEmpty').hidden = !!vm; $('#liveBody').hidden = !vm;
+  banner(vm);
+  if (!vm) return;
+  const l = S.live;
+  const phase = $('#phaseLine');
+  if (vm.mode === 'live') {
+    const txt = { connecting: 'Connecting to the server...', preloading: 'Preloading the dataset (not part of the measurements)...', running: 'Running.', finishing: 'Finishing and saving the run...', done: 'Finished.', error: 'The run failed.' }[l.state] || '';
+    phase.textContent = txt + (l.error ? ' ' + l.error : '');
+    phase.style.color = l.state === 'error' ? 'var(--danger)' : '';
+    const lastPt = vm.series[vm.series.length - 1];
+    const pct = l.state === 'running' && lastPt && l.duration_seconds ? lastPt.offset_s / l.duration_seconds * 100 : (l.state === 'finishing' || l.state === 'done' ? 100 : 0);
+    $('#progressBar').style.width = Math.min(100, Math.max(0, pct)) + '%';
+  } else { phase.textContent = 'Finished.'; $('#progressBar').style.width = '100%'; }
+  const series = vm.series; const last = series[series.length - 1] || {};
+  const kp = clear($('#liveKpis'));
+  const sm = vm.summary && vm.summary.client;
+  kp.append(
+    kpi('Throughput', fmtOps(sm ? sm.ops_per_sec : last.ops_per_sec), sm ? 'average' : 'latest slice'),
+    kpi('Operations', fmtInt(vm.ops), vm.misses ? fmtInt(vm.misses) + ' misses' : ''),
+    kpi('p50', fmtMs(sm ? sm.p50_ms : last.p50_ms)), kpi('p95', fmtMs(sm ? sm.p95_ms : last.p95_ms)), kpi('p99', fmtMs(sm ? sm.p99_ms : last.p99_ms)),
+    kpi('Errors', fmtInt(vm.errors)));
+  renderSweepBanner();
+  renderTimeMachine('live', series);
+  drawChart('ch-workers', [{ label: 'active workers', data: xy(series, 'offset_s', 'workers'), color: COLORS.purple }], 'workers');
+  const mk = eventMarkers(vm);
+  drawChart('ch-throughput', [{ label: 'ops/s', data: xy(series, 'offset_s', 'ops_per_sec'), color: COLORS.sky }], 'ops/s', { markers: mk });
+  drawChart('ch-latency', [
+    { label: 'p50', data: xy(series, 'offset_s', 'p50_ms'), color: COLORS.sky },
+    { label: 'p95', data: xy(series, 'offset_s', 'p95_ms'), color: COLORS.sun },
+    { label: 'p99', data: xy(series, 'offset_s', 'p99_ms'), color: COLORS.fire }], 'ms', { markers: mk });
+  drawChart('ch-errors', [{ label: 'errors', data: xy(series, 'offset_s', 'errors'), color: COLORS.fire }], 'errors', { markers: mk });
+  $('#opP99Head').textContent = vm.mode === 'live' ? 'p99 (latest slice)' : 'p99';
+  const tb = clear($('#opTable tbody'));
+  vm.perOp.forEach(o => tb.append(el('tr', {}, el('td', { text: o.op }), el('td', { class: 'num', text: fmtInt(o.ops) }),
+    el('td', { class: 'num', text: vm.ops ? (o.ops / vm.ops * 100).toFixed(1) + '%' : '-' }), el('td', { class: 'num', text: fmtInt(o.misses) }),
+    el('td', { class: 'num', text: fmtInt(o.errors) }), el('td', { class: 'num', text: fmtMs(o.p99_ms) }))));
+}
+
+/* ---------- Latency Analysis ---------- */
+function renderLatency() {
+  const vm = viewModel();
+  const done = vm && vm.mode === 'stored';
+  $('#latEmpty').hidden = !!vm; $('#latBody').hidden = !vm;
+  if (!vm) return;
+  const sm = done ? vm.summary.client : null;
+  const kp = clear($('#latKpis'));
+  const last = vm.series[vm.series.length - 1] || {};
+  if (sm) kp.append(kpi('Mean', fmtMs(sm.mean_ms)), kpi('p50', fmtMs(sm.p50_ms)), kpi('p95', fmtMs(sm.p95_ms)), kpi('p99', fmtMs(sm.p99_ms)), kpi('p99.9', fmtMs(sm.p999_ms)), kpi('Max', fmtMs(sm.max_ms)));
+  else kp.append(kpi('p50', fmtMs(last.p50_ms), 'latest slice'), kpi('p95', fmtMs(last.p95_ms), 'latest slice'), kpi('p99', fmtMs(last.p99_ms), 'latest slice'), kpi('Max', fmtMs(last.max_ms), 'latest slice'));
+  let note = 'Latency is the time from sending a command to its reply. With pipelining, every operation in a batch is charged the batch round trip.';
+  if (sm && sm.coordinated_omission) note += ' This run used coordinated-omission latency: it is measured from each batch’s intended start, so time spent behind schedule is included.';
+  else if (sm && sm.target_ops_per_sec) note += ' This run was paced to a target rate but measured service time (not coordinated-omission aware).';
+  $('#latNote').textContent = note;
+  renderTimeMachine('latency', vm.series);
+  drawChart('ch-lat2', [
+    { label: 'p50', data: xy(vm.series, 'offset_s', 'p50_ms'), color: COLORS.sky },
+    { label: 'p95', data: xy(vm.series, 'offset_s', 'p95_ms'), color: COLORS.sun },
+    { label: 'p99', data: xy(vm.series, 'offset_s', 'p99_ms'), color: COLORS.fire },
+    { label: 'max', data: xy(vm.series, 'offset_s', 'max_ms'), color: COLORS.stone }], 'ms', { markers: eventMarkers(vm) });
+  renderPubSub(vm);
+  const tb = clear($('#latTable tbody'));
+  vm.perOp.forEach(o => tb.append(el('tr', {}, el('td', { text: o.op }), el('td', { class: 'num', text: fmtInt(o.ops) }),
+    el('td', { class: 'num', text: fmtMs(o.p50_ms) }), el('td', { class: 'num', text: o.p95_ms != null ? fmtMs(o.p95_ms) : '-' }),
+    el('td', { class: 'num', text: fmtMs(o.p99_ms) }), el('td', { class: 'num', text: o.max_ms != null ? fmtMs(o.max_ms) : '-' }))));
+}
+
+function renderPubSub(vm) {
+  const ps = vm.mode === 'stored' && vm.summary.client.pubsub;
+  $('#psBlock').hidden = !ps;
+  if (!ps) return;
+  const kp = clear($('#psKpis'));
+  kp.append(kpi('Subscribers', fmtInt(ps.subscribers), `${ps.channels} ${ps.sharded ? 'shard ' : ''}channels`),
+    kpi('Published', fmtInt(ps.published)), kpi('Delivered', fmtInt(ps.delivered), `of ${fmtInt(ps.expected)} expected (${(ps.delivery_ratio * 100).toFixed(1)}%)`),
+    kpi('Delivery p50', fmtMs(ps.p50_ms)), kpi('Delivery p99', fmtMs(ps.p99_ms)), kpi('Delivery max', fmtMs(ps.max_ms)));
+  const pts = vm.series.filter(p => p.delivered);
+  drawChart('ch-pubsub', [
+    { label: 'p50', data: xy(pts, 'offset_s', 'delivery_p50_ms'), color: COLORS.sky },
+    { label: 'p99', data: xy(pts, 'offset_s', 'delivery_p99_ms'), color: COLORS.fire }], 'ms', { markers: eventMarkers(vm) });
+}
+
+/* ---------- Server ---------- */
+function serverOffMessage(box, what) {
+  clear(box);
+  box.append(el('p', { text: `Server metrics are off, so there is no ${what}.` }),
+    el('p', { class: 'settings-note', text: 'Turn on "Collect server metrics" in Settings to also read INFO, SLOWLOG and LATENCY from the server during a run.' }),
+    el('button', { class: 'btn btn-small', type: 'button', text: 'Go to Settings', onclick: () => openSetting('#f-srv') }));
+}
+function renderServer() {
+  const vm = viewModel();
+  const on = vm && vm.server;
+  $('#srvBody').hidden = !on;
+  $('#srvEmpty').hidden = !!on;
+  if (!on) {
+    if (!vm) { clear($('#srvEmpty')).append('Server statistics are available for a run with server metrics on.'); }
+    else if (vm.serverOn) clear($('#srvEmpty')).append('Waiting for the first server poll...');
+    else serverOffMessage($('#srvEmpty'), 'server data for this run');
+    return;
+  }
+  const s = vm.server, sm = s.samples || [];
+  const kp = clear($('#srvKpis'));
+  const last = sm[sm.length - 1] || {};
+  if (vm.mode === 'stored') {
+    kp.append(kpi('Server', s.version || '-', `${s.role || ''} ${s.mode || ''}`), kpi('Ops processed', fmtInt(s.server_ops), `plgv sent ${fmtInt(vm.ops)}`),
+      kpi('Hit ratio', fmtPct(s.hit_ratio)), kpi('Peak memory', fmtMiB(s.used_memory_max), s.maxmemory ? 'maxmemory ' + fmtMiB(s.maxmemory) : 'no maxmemory'),
+      kpi('Evicted keys', fmtInt(s.evicted_keys), fmtInt(s.expired_keys) + ' expired'), kpi('Slowlog entries', fmtInt(s.slowlog_new)));
+  } else {
+    kp.append(kpi('Server', s.version || '-'), kpi('Server ops/s', fmtOps(last.ops_per_sec)), kpi('Hit ratio', fmtPct(last.hit_ratio)),
+      kpi('Memory', last.used_memory ? fmtMiB(last.used_memory) : '-'), kpi('Clients', fmtInt(last.connected_clients)), kpi('Slowlog entries', fmtInt(s.slowlog_new)));
+  }
+  renderTimeMachine('server', vm.series);
+  renderTopology(vm);
+  drawChart('ch-srvops', [{ label: 'server ops/s', data: xy(sm, 'offset_s', 'ops_per_sec'), color: COLORS.green }, { label: 'plgv ops/s', data: xy(vm.series, 'offset_s', 'ops_per_sec'), color: COLORS.sky }], 'ops/s', { markers: eventMarkers(vm) });
+  drawChart('ch-srvmem', [{ label: 'used memory', data: sm.map(p => ({ x: p.offset_s, y: p.used_memory / 1048576 })), color: COLORS.purple }], 'MiB');
+  drawChart('ch-srvhit', [{ label: 'hit ratio', data: sm.filter(p => p.hit_ratio >= 0).map(p => ({ x: p.offset_s, y: p.hit_ratio * 100 })), color: COLORS.green }], '%');
+  drawChart('ch-srvconn', [{ label: 'connected', data: xy(sm, 'offset_s', 'connected_clients'), color: COLORS.sky }, { label: 'blocked', data: xy(sm, 'offset_s', 'blocked_clients'), color: COLORS.fire }], 'clients');
+}
+
+/* ---------- cluster and sentinel: nodes and topology events ---------- */
+const NODE_COLORS = [COLORS.sky, COLORS.fire, COLORS.green, COLORS.purple, COLORS.sun, COLORS.stone, '#ec4899', '#0891b2'];
+function renderTopology(vm) {
+  const box = $('#srvTopology'); const s = vm.server;
+  const nodes = (s && s.nodes) || [], topo = s && s.topology;
+  box.hidden = !nodes.length && !topo;
+  if (box.hidden) return;
+  const stored = vm.mode === 'stored';
+  const cnodes = (stored && vm.summary.client.nodes) || [];
+  const byAddr = Object.fromEntries(cnodes.map(n => [n.addr, n]));
+  const tb = clear($('#nodeTable tbody'));
+  const table = $('#nodeTable'); table.hidden = !nodes.length; table.previousElementSibling.hidden = !nodes.length;
+  nodes.forEach(n => {
+    const cn = byAddr[n.addr];
+    tb.append(el('tr', { 'data-node': n.addr, class: n.role === 'replica' ? '' : '' },
+      el('td', {}, el('code', { text: n.addr })), el('td', {}, el('span', { class: 'chip ' + (n.role === 'primary' ? 'info' : ''), text: n.role })),
+      el('td', { class: 'num', text: n.slots ? fmtInt(n.slots) : '-' }), el('td', { class: 'num', text: cn ? fmtInt(cn.ops) : '-' }),
+      el('td', { class: 'num', text: cn ? cn.share_pct.toFixed(1) + '%' : '-' }), el('td', { class: 'num', text: cn ? fmtInt(cn.errors) : '-' }),
+      el('td', { class: 'num', text: fmtInt(n.server_ops) }), el('td', { class: 'num', text: fmtMiB(n.used_memory_max) })));
+  });
+  const ev = clear($('#topoEvents'));
+  const events = topo ? topo.events || [] : [];
+  if (!events.length) ev.append(el('p', { class: 'settings-note', text: topo && topo.cluster_down ? 'No role or slot changes were seen, but the cluster reported cluster_state fail.' : 'No failovers, reshards or node changes were seen.' }));
+  events.forEach(e => ev.append(el('div', { class: 'insight warning', 'data-event': e.kind }, el('div', { class: 'sev', text: `${e.kind} at ${e.offset_s.toFixed(1)}s` }), el('div', { text: e.detail }))));
+  if (topo && topo.poll_errors) ev.append(el('p', { class: 'settings-note', text: `${topo.poll_errors} topology polls failed (first: ${topo.first_error || 'unknown'}).` }));
+  const mk = eventMarkers(vm);
+  drawChart('ch-nodeops', nodes.filter(n => (n.samples || []).length).map((n, i) => ({ label: n.addr + (n.role === 'replica' ? ' (replica)' : ''), data: xy(n.samples, 'offset_s', 'ops_per_sec'), color: NODE_COLORS[i % NODE_COLORS.length] })), 'ops/s', { markers: mk });
+  const cn = (stored && vm.summary.client.nodes) || [];
+  drawChart('ch-clientnodes', cn.map((n, i) => ({ label: n.addr, data: vm.series.map((p, k) => ({ x: p.offset_s, y: (p.node_ops && p.node_ops[i] || 0) / Math.max(0.001, p.offset_s - (k ? vm.series[k - 1].offset_s : 0)) })), color: NODE_COLORS[i % NODE_COLORS.length] })), 'ops/s', { markers: mk });
+}
+
+/* ---------- Slowlog ---------- */
+function renderSlowlog() {
+  const vm = viewModel();
+  const on = vm && vm.server;
+  $('#slowBody').hidden = !on; $('#slowEmpty').hidden = !!on;
+  if (!on) {
+    if (!vm) clear($('#slowEmpty')).append('Slowlog entries are available for a run with server metrics on.');
+    else if (vm.serverOn) clear($('#slowEmpty')).append('Waiting for the first server poll...');
+    else serverOffMessage($('#slowEmpty'), 'slowlog for this run');
+    return;
+  }
+  const entries = vm.server.slowlog || [];
+  const tb = clear($('#slowTable tbody'));
+  if (!entries.length) tb.append(el('tr', {}, el('td', { colspan: '3', text: 'No slow commands were logged during this run.' })));
+  const SHOW = 100;
+  entries.slice(0, SHOW).forEach(e => tb.append(el('tr', {}, el('td', { text: new Date(e.unix_time * 1000).toLocaleTimeString() }), el('td', { class: 'num', text: fmtMs(e.duration_ms) }), el('td', {}, el('code', { text: e.command })))));
+  if (entries.length > SHOW) tb.append(el('tr', {}, el('td', { colspan: '3', class: 'settings-note', text: `Showing the first ${SHOW} of ${entries.length} stored entries (${fmtInt(vm.server.slowlog_new || 0)} slow commands in total). The report lists them all.` })));
+  const ev = clear($('#latEvents'));
+  const events = vm.server.latency_events || [];
+  if (!events.length) ev.append(el('p', { class: 'settings-note', text: 'The server recorded no latency events. The latency monitor is off by default on the server (latency-monitor-threshold is 0).' }));
+  else { const t = el('table', { class: 'data' }, el('thead', {}, el('tr', {}, el('th', { text: 'Event' }), el('th', { class: 'num', text: 'Latest' }), el('th', { class: 'num', text: 'Max' }))));
+    const b = el('tbody', {}); events.forEach(x => b.append(el('tr', {}, el('td', { text: x.name }), el('td', { class: 'num', text: x.latest_ms + ' ms' }), el('td', { class: 'num', text: x.max_ms + ' ms' })))); t.append(b); ev.append(t); }
+}
+
+/* ---------- Key Space ---------- */
+function fmtBytes(n) {
+  n = Number(n) || 0;
+  if (n >= 1073741824) return (n / 1073741824).toFixed(1) + ' GiB';
+  if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MiB';
+  if (n >= 1024) return (n / 1024).toFixed(1) + ' KiB';
+  return n + ' B';
+}
+function fmtTTL(sec) {
+  if (sec < 0) return 'never';
+  if (sec >= 86400) return (sec / 86400).toFixed(1) + ' d';
+  if (sec >= 3600) return (sec / 3600).toFixed(1) + ' h';
+  if (sec >= 60) return Math.round(sec / 60) + ' min';
+  return sec + ' s';
+}
+function histBars(box, buckets) {
+  clear(box);
+  const max = Math.max(1, ...buckets.map(b => b.keys));
+  buckets.forEach(b => box.append(el('div', { class: 'hist-row' },
+    el('span', { class: 'hist-label', text: b.label }),
+    el('span', { class: 'hist-track' }, el('span', { class: 'hist-fill', style: `width:${(b.keys / max * 100).toFixed(1)}%` })),
+    el('span', { class: 'hist-n', text: fmtInt(b.keys) }))));
+}
+function renderKeySpace() {
+  const vm = viewModel();
+  const stored = vm && vm.mode === 'stored';
+  const ks = stored && vm.summary.keyspace;
+  const empty = $('#ksEmpty'), body = $('#ksBody');
+  body.hidden = !(ks && ks.sampled > 0); empty.hidden = !body.hidden;
+  if (!body.hidden) {
+    $('#ksNote').textContent = (ks.complete ? `All ${fmtInt(ks.sampled)} keys matching ${ks.match} were inspected.` : `A sample of ${fmtInt(ks.sampled)} of the keys matching ${ks.match} was inspected (the server holds ${fmtInt(ks.db_size)} keys in all). Figures describe the sample.`) +
+      (ks.gone ? ` ${fmtInt(ks.gone)} keys expired or were deleted while scanning.` : '') + (ks.errors ? ` ${fmtInt(ks.errors)} lookups failed (first: ${ks.first_error}).` : '');
+    clear($('#ksKpis')).append(kpi('Keys inspected', fmtInt(ks.sampled), ks.sources > 1 ? `on ${ks.sources} nodes` : ''), kpi('Total size', fmtBytes(ks.total_bytes)),
+      kpi('Median key', fmtBytes(ks.p50_bytes)), kpi('p99 key', fmtBytes(ks.p99_bytes)), kpi('Biggest key', fmtBytes(ks.max_bytes), ks.over_1mib ? `${fmtInt(ks.over_1mib)} keys over 1 MiB` : ''),
+      kpi('Without expiry', fmtInt(ks.no_expiry), `${(ks.no_expiry / ks.sampled * 100).toFixed(0)}% of keys`));
+    const tb = clear($('#ksTypes tbody'));
+    ks.types.forEach(t => tb.append(el('tr', {}, el('td', { text: t.type }), el('td', { class: 'num', text: fmtInt(t.keys) }), el('td', { class: 'num', text: (t.share * 100).toFixed(1) + '%' }),
+      el('td', { class: 'num', text: fmtBytes(t.avg_bytes) }), el('td', { class: 'num', text: fmtBytes(t.max_bytes) }), el('td', { class: 'num', text: fmtInt(t.max_elements) }))));
+    histBars($('#ksSizes'), ks.sizes); histBars($('#ksTTL'), ks.ttl);
+    const bb = clear($('#ksBig tbody'));
+    ks.big_keys.forEach(b => bb.append(el('tr', {}, el('td', {}, el('code', { text: b.key })), el('td', { text: b.type }), el('td', { class: 'num', text: fmtBytes(b.bytes) }), el('td', { class: 'num', text: fmtInt(b.elements) }), el('td', { class: 'num', text: fmtTTL(b.ttl_seconds) }))));
+    return;
+  }
+  clear(empty);
+  if (!vm) empty.append('The key space is analyzed after a run. Run a workload with key-space analysis on, or open a finished run from Run History.');
+  else if (!stored) empty.append('The key-space analysis runs when the run has finished.');
+  else if (ks && ks.sampled === 0) empty.append(el('p', { text: `No keys were analyzed matching ${ks.match}.` }), el('p', { class: 'settings-note', text: ks.first_error ? 'The analysis reported: ' + ks.first_error : 'No key matched the pattern. Check the key prefix or the pattern in Settings.' }));
+  else empty.append(el('p', { text: 'Key-space analysis was off for this run.' }), el('p', { class: 'settings-note', text: 'Turn on "Analyze the key space after the run" in Settings (Advanced) to see key types, sizes, expiry and the biggest keys.' }),
+    el('button', { class: 'btn btn-small', type: 'button', text: 'Go to Settings', onclick: () => openSetting('#f-ks') }));
+}
+
+/* ---------- Insights ---------- */
+function updateInsightBadge() {
+  const vm = viewModel(); const n = vm ? (vm.findings || []).filter(f => f.severity !== 'info').length : 0;
+  const c = $('#insightCount'); c.hidden = !n; c.textContent = n;
+}
+function renderInsights() {
+  const vm = viewModel();
+  const stored = vm && vm.mode === 'stored';
+  $('#insEmpty').hidden = !!stored; $('#insBody').hidden = !stored;
+  if (!stored) return;
+  const body = clear($('#insBody'));
+  banner(vm);
+  if (!vm.findings.length) body.append(el('div', { class: 'insight info' }, el('div', { class: 'sev', text: 'No findings' }), el('div', { text: 'Nothing in this run needs attention.' })));
+  vm.findings.forEach(f => body.append(el('div', { class: 'insight ' + f.severity },
+    el('div', { class: 'sev', text: f.severity }), el('strong', { text: f.title }), el('div', { class: 'ev', text: f.evidence }), el('div', { text: f.advice }))));
+  if (!vm.server) body.append(el('div', { class: 'banner warn' }, 'Server metrics were off for this run, so findings about the server (evictions, memory, slow commands, replication) were not checked.'));
+}
+
+/* ---------- Run History ---------- */
+async function loadHistory() {
+  const r = await api('GET', '/api/runs');
+  S.runs = (r.data && r.data.runs) || [];
+  if (S.tab === 'history') renderHistory();
+}
+function renderHistory() {
+  const tb = clear($('#histTable tbody'));
+  $('#histEmpty').hidden = S.runs.length > 0; $('#histTable').hidden = S.runs.length === 0;
+  S.histSel = S.histSel.filter(id => S.runs.some(r => r.id === id));
+  S.runs.forEach(r => {
+    const cb = el('input', { type: 'checkbox', 'aria-label': 'Select ' + (r.label || r.id), 'data-run': r.id, onchange: e => {
+      S.histSel = e.target.checked ? [...S.histSel, r.id].slice(-2) : S.histSel.filter(x => x !== r.id); renderHistory(); } });
+    cb.checked = S.histSel.includes(r.id);
+    const chips = el('td', {});
+    if (r.critical) chips.append(el('span', { class: 'chip critical', text: r.critical + ' critical' }));
+    if (r.warnings) chips.append(el('span', { class: 'chip warning', text: r.warnings + ' warning' + (r.warnings > 1 ? 's' : '') }));
+    if (!r.critical && !r.warnings) chips.append(el('span', { class: 'chip ok', text: r.server_metrics ? 'clean' : 'client only' }));
+    if (r.stopped) chips.append(el('span', { class: 'chip', text: 'stopped' }));
+    if (r.sweep) chips.append(el('span', { class: 'chip', 'data-sweep-chip': r.sweep.id, text: `sweep ${r.sweep.index}/${r.sweep.total}` }));
+    if (r.loop === 'open') chips.append(el('span', { class: 'chip', text: 'open loop' }));
+    if (r.target_mode && r.target_mode !== 'standalone') chips.append(el('span', { class: 'chip', 'data-mode-chip': r.target_mode, text: r.target_mode }));
+    tb.append(el('tr', {}, el('td', {}, cb), el('td', {}, el('strong', { text: r.label || r.id }), el('div', { class: 'settings-note', text: r.mix })),
+      el('td', { text: fmtTime(r.started_at) }), el('td', { class: 'num', text: r.duration_seconds.toFixed(0) + 's' }), el('td', { class: 'num', text: fmtInt(r.ops_per_sec) }),
+      el('td', { class: 'num', text: fmtMs(r.p99_ms) }), el('td', { class: 'num', text: fmtInt(r.errors) }), chips,
+      el('td', {}, el('button', { class: 'btn btn-small', type: 'button', text: 'Open', 'data-open': r.id, onclick: () => openRun(r.id) }), ' ',
+        el('a', { class: 'btn btn-small', href: '/api/runs/' + r.id + '/report', target: '_blank', rel: 'noopener', text: 'Report', style: 'display:inline-flex;align-items:center;text-decoration:none' }), ' ',
+        el('button', { class: 'btn btn-small', type: 'button', text: 'Delete', 'data-delete': r.id, onclick: () => deleteRun(r) }),
+        r.sweep ? [' ', el('button', { class: 'btn btn-small', type: 'button', text: 'Compare sweep', 'data-compare-sweep': r.sweep.id, onclick: () => openSweep(r.sweep.id) })] : null)));
+  });
+  const n = S.histSel.length;
+  $('#histCompare').disabled = n !== 2;
+  $('#histNote').textContent = n === 2 ? 'Two runs selected.' : `Select two runs to compare them (${n} selected).`;
+}
+async function openRun(id) {
+  const r = await api('GET', '/api/runs/' + id);
+  if (!r.ok) return;
+  S.view = r.data; S.viewId = id; S.range = null; showTab('live');
+}
+async function deleteRun(r) {
+  if (!confirm(`Delete run "${r.label || r.id}"?`)) return;
+  await api('DELETE', '/api/runs/' + r.id);
+  if (S.viewId === r.id) { S.view = null; S.viewId = null; }
+  await loadHistory(); renderHistory();
+}
+$('#histCompare').addEventListener('click', () => {
+  const [a, b] = S.histSel; showTab('compare');
+  loadHistory().then(() => { fillCompareSelects(); $('#cmpA').value = a; $('#cmpB').value = b; runCompare(); });
+});
+
+/* ---------- Compare ---------- */
+function runLabel(r) { return (r.label ? r.label + ' · ' : '') + fmtTime(r.started_at) + ' · ' + fmtInt(r.ops_per_sec) + ' ops/s'; }
+function fillCompareSelects() {
+  ['cmpA', 'cmpB'].forEach((id, i) => {
+    const sel = $('#' + id); const keep = sel.value; clear(sel);
+    S.runs.forEach(r => sel.append(el('option', { value: r.id, text: runLabel(r) })));
+    sel.value = keep && S.runs.some(r => r.id === keep) ? keep : (S.runs[i] ? S.runs[i].id : '');
+  });
+}
+$('#cmpGo').addEventListener('click', runCompare);
+async function runCompare() {
+  const a = $('#cmpA').value, b = $('#cmpB').value;
+  const msg = $('#cmpMsg'), body = clear($('#cmpBody'));
+  if (!a || !b || a === b) { msg.hidden = false; msg.textContent = a === b && a ? 'Pick two different runs.' : 'Pick two runs. Differences are shown as B relative to A.'; body.hidden = true; return; }
+  const r = await api('GET', `/api/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`);
+  if (!r.ok) { msg.hidden = false; msg.textContent = r.data.error || 'Could not compare.'; body.hidden = true; return; }
+  const c = r.data; msg.hidden = true; body.hidden = false;
+  if (!c.comparable) body.append(el('div', { class: 'banner warn' }, 'These runs have different workloads (operations, dataset or client settings), so the differences below may come from the workload rather than the server. See the setting differences.'));
+  const t = el('table', { class: 'data', id: 'cmpMetrics' }, el('thead', {}, el('tr', {}, el('th', { text: 'Metric' }), el('th', { class: 'num', text: 'A' }), el('th', { class: 'num', text: 'B' }), el('th', { class: 'num', text: 'Change' }), el('th', { text: '' }))));
+  const tb = el('tbody', {});
+  c.metrics.forEach(m => {
+    const fmt = v => m.unit === 'ms' ? fmtMs(v) : m.unit === 'ops/s' ? fmtOps(v) : m.unit === '%' ? v.toFixed(1) + '%' : m.unit === 'MiB' ? v.toFixed(1) + ' MiB' : m.unit === 'cores' ? v.toFixed(2) : fmtInt(v);
+    const verdict = m.better === 'same' ? 'about the same' : (m.better === 'b' ? 'B is better' : 'A is better');
+    tb.append(el('tr', { 'data-metric': m.name }, el('td', { text: m.name }), el('td', { class: 'num', text: fmt(m.a) }), el('td', { class: 'num', text: fmt(m.b) }),
+      el('td', { class: 'num', text: (m.change_pct >= 0 ? '+' : '') + (m.change_pct * 100).toFixed(1) + '%' }),
+      el('td', { class: m.better === 'same' ? '' : (m.better === 'b' ? 'better' : 'worse'), text: verdict })));
+  });
+  t.append(tb); body.append(t);
+  body.append(el('div', { class: 'charts', style: 'margin-top:16px' },
+    el('div', { class: 'chart-card' }, el('h3', { text: 'Throughput (ops/s)' }), el('div', { class: 'chart-box' }, el('canvas', { id: 'ch-cmp-ops' }))),
+    el('div', { class: 'chart-card' }, el('h3', { text: 'p99 latency (ms)' }), el('div', { class: 'chart-box' }, el('canvas', { id: 'ch-cmp-p99' })))));
+  delete charts['ch-cmp-ops']; delete charts['ch-cmp-p99'];
+  drawChart('ch-cmp-ops', [{ label: 'A', data: xy(c.series_a || [], 'offset_s', 'ops_per_sec'), color: COLORS.sky }, { label: 'B', data: xy(c.series_b || [], 'offset_s', 'ops_per_sec'), color: COLORS.fire }], 'ops/s');
+  drawChart('ch-cmp-p99', [{ label: 'A', data: xy(c.series_a || [], 'offset_s', 'p99_ms'), color: COLORS.sky }, { label: 'B', data: xy(c.series_b || [], 'offset_s', 'p99_ms'), color: COLORS.fire }], 'ms');
+  body.append(el('h3', { style: 'margin-top:16px', text: 'Setting differences' }));
+  if (!c.config_diffs.length) body.append(el('p', { class: 'settings-note', text: 'The two runs used the same settings.' }));
+  else { const dt = el('table', { class: 'data', id: 'cmpDiffs' }, el('thead', {}, el('tr', {}, el('th', { text: 'Setting' }), el('th', { text: 'A' }), el('th', { text: 'B' }))));
+    const db = el('tbody', {}); c.config_diffs.forEach(d => db.append(el('tr', {}, el('td', {}, el('code', { text: d.key })), el('td', { text: d.a }), el('td', { text: d.b })))); dt.append(db); body.append(dt); }
+  body.append(el('h3', { style: 'margin-top:16px', text: 'By operation' }));
+  const ot = el('table', { class: 'data' }, el('thead', {}, el('tr', {}, el('th', { text: 'Operation' }), el('th', { class: 'num', text: 'A ops' }), el('th', { class: 'num', text: 'B ops' }), el('th', { class: 'num', text: 'A p99' }), el('th', { class: 'num', text: 'B p99' }))));
+  const ob = el('tbody', {}); c.per_op.forEach(o => ob.append(el('tr', {}, el('td', { text: o.op }), el('td', { class: 'num', text: fmtInt(o.a_ops) }), el('td', { class: 'num', text: fmtInt(o.b_ops) }), el('td', { class: 'num', text: fmtMs(o.a_p99_ms) }), el('td', { class: 'num', text: fmtMs(o.b_p99_ms) })))); ot.append(ob); body.append(ot);
+  if (c.findings_only_in_a.length || c.findings_only_in_b.length) {
+    body.append(el('h3', { style: 'margin-top:16px', text: 'Findings that differ' }),
+      el('p', { text: 'Only in A: ' + (c.findings_only_in_a.join(', ') || 'none') + '. Only in B: ' + (c.findings_only_in_b.join(', ') || 'none') + '.' }));
+  }
+  setTimeout(resizeCharts, 0);
+}
+
+/* ---------- Replay Comparison ---------- */
+async function replayCompare(objs) {
+  const msg = $('#rpMsg'), body = clear($('#rpBody'));
+  S.replayFiles = objs;
+  const tol = Number($('#rpTol').value);
+  const r = await api('POST', '/api/replay-compare', { files: objs, tolerance: Number.isFinite(tol) ? tol : 10 });
+  if (!r.ok) { msg.hidden = false; msg.textContent = r.data.error || 'Could not compare.'; body.hidden = true; return; }
+  msg.hidden = true; body.hidden = false;
+  renderReplayCompare(r.data, body);
+}
+async function replayFilesChosen(files) {
+  const msg = $('#rpMsg');
+  const objs = [];
+  for (const f of files) {
+    try { objs.push(JSON.parse(await f.text())); }
+    catch (e) { msg.hidden = false; msg.textContent = `${f.name} is not a JSON file.`; $('#rpBody').hidden = true; return; }
+  }
+  if (objs.length) await replayCompare(objs);
+}
+function rpFmtDelta(r) { return (r.delta_pct >= 0 ? '+' : '') + r.delta_pct.toFixed(1) + '%'; }
+function rpFmt(unit, v) { return unit === 'ms' ? fmtMs(v) : unit === 'ops/s' ? fmtOps(v) : fmtInt(v); }
+function renderReplayCompare(d, body) {
+  const sums = d.summaries;
+  const st = el('table', { class: 'data', id: 'rpSummaries' }, el('thead', {}, el('tr', {}, ['Target', 'Server', 'ops/s', 'p50', 'p99', 'Errors', 'Commands', 'Starting data', 'Replies vs recording'].map((h, i) => el('th', { class: i >= 2 && i <= 5 ? 'num' : '', text: h })))));
+  const sb = el('tbody', {});
+  sums.forEach((s, i) => {
+    const o = s.outcomes;
+    sb.append(el('tr', { 'data-target': s.label }, el('td', {}, el('strong', { text: s.label }), i === 0 ? el('span', { class: 'settings-note', text: ' (baseline)' }) : null),
+      el('td', { text: s.failure ? 'did not run' : (s.server_version || '-') }), el('td', { class: 'num', text: fmtOps(s.ops_per_sec) }), el('td', { class: 'num', text: fmtMs(s.latency_ms.p50) }),
+      el('td', { class: 'num', text: fmtMs(s.latency_ms.p99) }), el('td', { class: 'num', text: fmtInt(s.errors) }),
+      el('td', { text: s.failure ? '-' : (s.hash_matches ? 'as recorded' : (s.reads_only ? 'reads only' : 'differ')) }),
+      el('td', { text: s.data_check ? (s.data_check.match ? 'same' : 'different') : '-' }),
+      el('td', { text: o ? (o.compared ? `${fmtInt(o.status_diffs)} status, ${fmtInt(o.checksum_diffs)} checksum` : 'not compared') : '-' })));
+  });
+  st.append(sb); body.append(st);
+  d.comparisons.forEach((c, n) => {
+    const box = el('div', { class: 'rp-compare', 'data-compare': c.other, style: 'margin-top:24px' });
+    box.append(el('h3', {}, `${c.other} against ${c.base} `, el('span', { class: 'rp-verdict v-' + c.verdict.replace(' ', '-'), text: c.verdict })));
+    if (!c.comparable) box.append(el('div', { class: 'banner warn' }, 'These replays cannot be compared: see the findings below.'));
+    if (c.rows.length) {
+      const t = el('table', { class: 'data' }, el('thead', {}, el('tr', {}, el('th', { text: 'Metric' }), el('th', { class: 'num', text: c.base }), el('th', { class: 'num', text: c.other }), el('th', { class: 'num', text: 'Change' }), el('th', { text: '' }))));
+      const tb = el('tbody', {});
+      c.rows.forEach(r => tb.append(el('tr', { 'data-metric': r.metric }, el('td', { text: r.metric }), el('td', { class: 'num', text: rpFmt(r.unit, r.base) }), el('td', { class: 'num', text: rpFmt(r.unit, r.other) }),
+        el('td', { class: 'num', text: rpFmtDelta(r) }), el('td', { class: r.verdict === 'same' ? '' : (r.verdict === 'better' ? 'better' : 'worse'), text: r.verdict === 'same' ? 'about the same' : r.verdict }))));
+      t.append(tb); box.append(t);
+    }
+    c.findings.forEach(f => box.append(el('div', { class: 'insight ' + (f.severity === 'critical' ? 'critical' : f.severity), 'data-sev': f.severity }, el('div', { class: 'sev', text: f.severity }), el('strong', { text: f.title }), el('div', { class: 'ev', text: f.detail }))));
+    if (!c.findings.length && c.comparable) box.append(el('p', { class: 'settings-note', text: 'Nothing differs beyond the tolerance.' }));
+    if (c.commands.length) {
+      box.append(el('h4', { style: 'margin-top:12px', text: 'By command' }));
+      const ct = el('table', { class: 'data' }, el('thead', {}, el('tr', {}, el('th', { text: 'Command' }), el('th', { class: 'num', text: 'Ops' }), el('th', { class: 'num', text: c.base + ' p99' }), el('th', { class: 'num', text: c.other + ' p99' }), el('th', { class: 'num', text: 'Change' }), el('th', { text: '' }))));
+      const cb = el('tbody', {});
+      c.commands.forEach(r => cb.append(el('tr', {}, el('td', { text: r.command }), el('td', { class: 'num', text: fmtInt(r.other_ops) }), el('td', { class: 'num', text: fmtMs(r.base_p99_ms) }), el('td', { class: 'num', text: fmtMs(r.other_p99_ms) }),
+        el('td', { class: 'num', text: (r.p99_delta_pct >= 0 ? '+' : '') + r.p99_delta_pct.toFixed(1) + '%' }), el('td', { class: r.verdict === 'same' ? '' : (r.verdict === 'better' ? 'better' : 'worse'), text: r.verdict === 'same' ? '' : r.verdict }))));
+      ct.append(cb); box.append(ct);
+    }
+    body.append(box);
+  });
+}
+$('#rpFiles').addEventListener('change', e => replayFilesChosen(Array.from(e.target.files)));
+$('#rpTol').addEventListener('change', () => { if (S.replayFiles) replayCompare(S.replayFiles); });
+
+/* ---------- Sweep results (Compare Runs) ---------- */
+async function loadSweeps() {
+  const r = await api('GET', '/api/sweeps');
+  S.sweeps = (r.data && r.data.sweeps) || [];
+  const sel = clear($('#sweepSelect')); const keep = S.sweepId;
+  S.sweeps.forEach(sw => sel.append(el('option', { value: sw.id, text: `${sw.label || sw.id} \u00b7 by ${sw.kind === 'rate' ? 'target rate' : 'worker count'} \u00b7 ${sw.done}/${sw.total} runs \u00b7 ${fmtTime(sw.started_at)}` })));
+  if (keep && S.sweeps.some(x => x.id === keep)) sel.value = keep;
+  $('#sweepMsg').hidden = S.sweeps.length > 0 && !!S.sweepId;
+  if (!S.sweeps.length) { $('#sweepMsg').hidden = false; $('#sweepBody').hidden = true; }
+}
+function openSweep(id) {
+  S.sweepId = id;
+  showTab('compare');
+  loadSweeps().then(() => { $('#sweepSelect').value = id; return showSweep(id); });
+}
+$('#sweepGo').addEventListener('click', () => { if ($('#sweepSelect').value) showSweep($('#sweepSelect').value); });
+async function showSweep(id) {
+  S.sweepId = id;
+  const msg = $('#sweepMsg'), body = clear($('#sweepBody'));
+  const r = await api('GET', '/api/sweeps/' + encodeURIComponent(id));
+  if (!r.ok) { msg.hidden = false; msg.textContent = r.data.error || 'Could not load the sweep.'; body.hidden = true; return; }
+  const sw = r.data; msg.hidden = true; body.hidden = false;
+  const rate = sw.kind === 'rate';
+  body.append(el('p', { class: 'settings-note', text: `${sw.label || sw.id}: ${sw.rows.length} of ${sw.total} runs, by ${rate ? 'target rate' : 'worker count'}.` }));
+  sw.notes.forEach(n => body.append(el('div', { class: 'banner' + (/did not finish|stopped early|could not serve/.test(n) ? ' warn' : ''), text: n })));
+  const t = el('table', { class: 'data', id: 'sweepTable' }, el('thead', {}, el('tr', {},
+    el('th', { text: rate ? 'Target ops/s' : 'Workers' }), el('th', { class: 'num', text: 'ops/s' }), el('th', { class: 'num', text: 'p50' }), el('th', { class: 'num', text: 'p95' }), el('th', { class: 'num', text: 'p99' }),
+    el('th', { class: 'num', text: 'Errors' }), rate ? el('th', { class: 'num', text: 'Dropped' }) : null, el('th', { class: 'num', text: rate ? 'Served' : 'Scaling' }), el('th', { text: '' }))));
+  const tb = el('tbody', {});
+  sw.rows.forEach(x => tb.append(el('tr', { class: x.run_id === sw.peak_run_id ? 'peak' : '', 'data-run': x.run_id },
+    el('td', { text: fmtInt(x.value) }), el('td', { class: 'num', text: fmtInt(x.ops_per_sec) }), el('td', { class: 'num', text: fmtMs(x.p50_ms) }), el('td', { class: 'num', text: fmtMs(x.p95_ms) }),
+    el('td', { class: 'num', text: fmtMs(x.p99_ms) }), el('td', { class: 'num', text: fmtInt(x.errors) }), rate ? el('td', { class: 'num', text: fmtInt(x.dropped_ops) }) : null,
+    el('td', { class: 'num', text: (x.efficiency * 100).toFixed(0) + '%' }),
+    el('td', {}, el('button', { class: 'btn btn-small', type: 'button', text: 'Open run', onclick: () => openRun(x.run_id) }), x.stopped ? el('span', { class: 'chip', text: 'stopped' }) : null))));
+  t.append(tb); body.append(t);
+  body.append(el('p', { class: 'settings-note', text: rate ? '"Served" is achieved throughput divided by the target rate. The highlighted row has the highest throughput.' : '"Scaling" is throughput relative to perfectly linear growth from the first level (100% = doubling workers doubles throughput). The highlighted row has the highest throughput.' }));
+  body.append(el('div', { class: 'charts', style: 'margin-top:16px' },
+    el('div', { class: 'chart-card' }, el('h3', { text: 'Throughput (ops/s)' }), el('div', { class: 'chart-box' }, el('canvas', { id: 'ch-sw-ops' }))),
+    el('div', { class: 'chart-card' }, el('h3', { text: 'Latency by level (ms)' }), el('div', { class: 'chart-box' }, el('canvas', { id: 'ch-sw-lat' })))));
+  delete charts['ch-sw-ops']; delete charts['ch-sw-lat'];
+  const labels = sw.rows.map(x => String(x.value));
+  drawChart('ch-sw-ops', [{ label: 'ops/s', data: sw.rows.map(x => x.ops_per_sec), color: COLORS.sky }], 'ops/s', { labels, points: true, xTitle: rate ? 'target ops/s' : 'workers' });
+  drawChart('ch-sw-lat', [{ label: 'p50', data: sw.rows.map(x => x.p50_ms), color: COLORS.sky }, { label: 'p95', data: sw.rows.map(x => x.p95_ms), color: COLORS.sun }, { label: 'p99', data: sw.rows.map(x => x.p99_ms), color: COLORS.fire }], 'ms', { labels, points: true, xTitle: rate ? 'target ops/s' : 'workers' });
+  setTimeout(resizeCharts, 0);
+}
+
+/* ---------- Trends ---------- */
+async function loadTrends() {
+  const r = await api('GET', '/api/trends');
+  S.trends = r.data; renderTrends();
+}
+$('#trendGroup').addEventListener('change', renderTrends);
+function renderTrends() {
+  const groups = (S.trends && S.trends.groups) || [];
+  const sel = $('#trendGroup'); const keep = sel.value;
+  clear(sel);
+  groups.forEach(g => sel.append(el('option', { value: g.fingerprint, text: `${g.mix || 'workload'} (${g.runs.length} run${g.runs.length === 1 ? '' : 's'})` })));
+  if (keep && groups.some(g => g.fingerprint === keep)) sel.value = keep;
+  else { const first = groups.find(g => g.enough); if (first) sel.value = first.fingerprint; }
+  const empty = $('#trendEmpty'), body = $('#trendBody');
+  const g = groups.find(x => x.fingerprint === sel.value);
+  if (!g) { empty.hidden = false; body.hidden = true; empty.textContent = 'No finished runs to chart yet. Run the same workload a few times to see trends.'; return; }
+  if (!g.enough) { empty.hidden = false; body.hidden = true; empty.textContent = `This workload has ${g.runs.length} run${g.runs.length === 1 ? '' : 's'}. Trends need at least ${S.trends.min_runs}.`; return; }
+  empty.hidden = true; body.hidden = false;
+  const fl = clear($('#trendFlags'));
+  if (!g.flags.length) fl.append(el('div', { class: 'banner' }, 'The newest run is in line with the previous runs.'));
+  g.flags.forEach(f => fl.append(el('div', { class: 'insight warning' }, el('div', { class: 'sev', text: 'regression: ' + f.metric }), el('div', { text: f.message }))));
+  const labels = g.runs.map(r => (r.label ? r.label + ' ' : '') + new Date(r.started_at).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }));
+  drawChart('ch-tr-ops', [{ label: 'ops/s', data: g.runs.map(r => r.ops_per_sec), color: COLORS.sky }], 'ops/s', { labels, points: true, xTitle: 'run' });
+  drawChart('ch-tr-p99', [{ label: 'p99', data: g.runs.map(r => r.p99_ms), color: COLORS.fire }], 'ms', { labels, points: true, xTitle: 'run' });
+  drawChart('ch-tr-hit', [{ label: 'hit ratio', data: g.runs.map(r => r.hit_ratio >= 0 ? r.hit_ratio * 100 : null), color: COLORS.green }], '%', { labels, points: true, xTitle: 'run' });
+  setTimeout(resizeCharts, 0);
+}
+
+/* ---------- init ---------- */
+async function init() {
+  const r = await api('GET', '/api/config');
+  S.defaults = r.data.defaults; S.ops = r.data.ops; S.opNames = r.data.op_names; S.presets = r.data.presets || [];
+  fillPresets(); fillTasks();
+  $('#version').textContent = r.data.version || '';
+  S.cfg = JSON.parse(JSON.stringify(S.defaults));
+  try { const lv = JSON.parse(recall('plgv.levels') || '{}'); LEVELS.advanced = !!lv.advanced; LEVELS.expert = !!lv.expert; } catch (e) { /* ignore */ }
+  applyLevels(); populateInputs(); updateStatus(); renderShell();
+  await loadSavedList();
+  await pollLive();
+  if (isActive()) showTab('live'); // a run is already going (page reloaded): show it
+  S.polling = setInterval(pollLive, 1000);
+  const rm = /run=([\w-]+)/.exec(location.hash || '');
+  if (rm) { const rr = await api('GET', '/api/runs/' + rm[1]); if (rr.ok) { S.view = rr.data; S.viewId = rm[1]; } }
+  if (/srv=on/.test(location.hash || '')) { setPath(S.cfg, 'server_metrics.enabled', true); populateInputs(); }
+  const sm = /set=([^&]+)/.exec(location.hash || '');
+  if (sm) { // #set=path:value,path:value pre-fills settings (for shared links and docs)
+    sm[1].split(',').forEach(kv => { const i = kv.indexOf(':'); if (i < 1) return; let v = decodeURIComponent(kv.slice(i + 1)); const n = Number(v); v = v === 'true' ? true : v === 'false' ? false : (v !== '' && !isNaN(n) ? n : v); const path = kv.slice(0, i), cur = getPath(S.cfg, path); if (Array.isArray(cur)) v = String(v).split(';').filter(Boolean).map(x => typeof cur[0] === 'number' || (cur.length === 0 && path.includes('values')) ? Number(x) : x); setPath(S.cfg, path, v); });
+    populateInputs();
+  }
+  const prm = /preset=([\w-]+)/.exec(location.hash || '');
+  if (prm) selectTask('preset:' + prm[1]); // #preset=name opens that workload's settings, defaults selected
+  else if (sm || /levels=/.test(location.hash || '')) { S.task = S.task || 'standard'; S.home = false; renderTask(); renderShell(); }
+  const rgm = /range=(\d+)-(\d+)/.exec(location.hash || '');
+  if (rgm) S.range = { from: Number(rgm[1]), to: Number(rgm[2]) };
+    const lm = /levels=([\w,]+)/.exec(location.hash || '');
+  if (lm) { LEVELS.advanced = lm[1].includes('advanced'); LEVELS.expert = lm[1].includes('expert'); applyLevels(); }
+  const cam = /cat=(\w+)/.exec(location.hash || '');
+  if (cam) { S.cat = cam[1]; applyLevels(); }
+  const swm = /sweep=([\w-]+)/.exec(location.hash || '');
+  if (swm) { openSweep(swm[1]); await tick0(); return void (window.plgvReady = true); }
+  const rpm = /replay=([A-Za-z0-9_-]+)/.exec(location.hash || '');
+  if (rpm) { // #replay=<base64url of a JSON array of replay summaries> opens the comparison (for docs and tests)
+    try { const files = JSON.parse(atob(rpm[1].replace(/-/g, '+').replace(/_/g, '/'))); showTab('replay'); await replayCompare(files); } catch (e) { /* ignore a bad link */ }
+    return void (window.plgvReady = true);
+  }
+  const cm = /compare=([\w-]+),([\w-]+)/.exec(location.hash || '');
+  if (cm) { showTab('compare'); await loadHistory(); fillCompareSelects(); $('#cmpA').value = cm[1]; $('#cmpB').value = cm[2]; await runCompare(); return void (window.plgvReady = true); }
+  const m = /tab=(\w+)/.exec(location.hash || '');
+  if (m && document.getElementById('panel-' + m[1])) showTab(m[1]);
+  window.plgvReady = true;
+}
+function tick0() { return new Promise(r => setTimeout(r, 0)); }
+window.plgvInit = init();
+</script>
+</body>
+</html>

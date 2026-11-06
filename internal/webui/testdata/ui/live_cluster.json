@@ -1,0 +1,240 @@
+{
+  "active_workers": 16,
+  "duration_seconds": 10,
+  "elapsed_seconds": 4,
+  "errors": 0,
+  "label": "cluster run",
+  "misses": 0,
+  "ops": 100000,
+  "per_op": [
+    {
+      "errors": 0,
+      "misses": 0,
+      "op": "GET",
+      "ops": 80000,
+      "p99_ms": 1.5
+    },
+    {
+      "errors": 0,
+      "misses": 0,
+      "op": "SET",
+      "ops": 20000,
+      "p99_ms": 1.5
+    }
+  ],
+  "series": [
+    {
+      "errors": 0,
+      "max_ms": 3,
+      "offset_s": 1,
+      "ops_per_sec": 50000,
+      "p50_ms": 0.3,
+      "p95_ms": 1,
+      "p99_ms": 1.5,
+      "workers": 0
+    }
+  ],
+  "server": {
+    "mode": "cluster",
+    "nodes": [
+      {
+        "addr": "127.0.0.1:7001",
+        "evicted_keys": 0,
+        "hit_ratio": 1,
+        "role": "primary",
+        "samples": [
+          {
+            "blocked_clients": 0,
+            "connected_clients": 0,
+            "fragmentation_ratio": 0,
+            "hit_ratio": -1,
+            "net_in_kbps": 0,
+            "net_out_kbps": 0,
+            "offset_s": 1,
+            "ops_per_sec": 3000,
+            "used_memory": 20971520
+          },
+          {
+            "blocked_clients": 0,
+            "connected_clients": 0,
+            "fragmentation_ratio": 0,
+            "hit_ratio": -1,
+            "net_in_kbps": 0,
+            "net_out_kbps": 0,
+            "offset_s": 2,
+            "ops_per_sec": 3100,
+            "used_memory": 22020096
+          }
+        ],
+        "server_ops": 30000,
+        "slots": 5461,
+        "slowlog_new": 0,
+        "used_memory_max": 20971520
+      },
+      {
+        "addr": "127.0.0.1:7002",
+        "evicted_keys": 0,
+        "hit_ratio": 1,
+        "role": "primary",
+        "samples": [
+          {
+            "blocked_clients": 0,
+            "connected_clients": 0,
+            "fragmentation_ratio": 0,
+            "hit_ratio": -1,
+            "net_in_kbps": 0,
+            "net_out_kbps": 0,
+            "offset_s": 1,
+            "ops_per_sec": 3000,
+            "used_memory": 20971520
+          },
+          {
+            "blocked_clients": 0,
+            "connected_clients": 0,
+            "fragmentation_ratio": 0,
+            "hit_ratio": -1,
+            "net_in_kbps": 0,
+            "net_out_kbps": 0,
+            "offset_s": 2,
+            "ops_per_sec": 3100,
+            "used_memory": 22020096
+          }
+        ],
+        "server_ops": 30000,
+        "slots": 5462,
+        "slowlog_new": 0,
+        "used_memory_max": 20971520
+      },
+      {
+        "addr": "127.0.0.1:7003",
+        "evicted_keys": 0,
+        "hit_ratio": 1,
+        "role": "primary",
+        "samples": [
+          {
+            "blocked_clients": 0,
+            "connected_clients": 0,
+            "fragmentation_ratio": 0,
+            "hit_ratio": -1,
+            "net_in_kbps": 0,
+            "net_out_kbps": 0,
+            "offset_s": 1,
+            "ops_per_sec": 3000,
+            "used_memory": 20971520
+          },
+          {
+            "blocked_clients": 0,
+            "connected_clients": 0,
+            "fragmentation_ratio": 0,
+            "hit_ratio": -1,
+            "net_in_kbps": 0,
+            "net_out_kbps": 0,
+            "offset_s": 2,
+            "ops_per_sec": 3100,
+            "used_memory": 22020096
+          }
+        ],
+        "server_ops": 30000,
+        "slots": 5461,
+        "slowlog_new": 0,
+        "used_memory_max": 20971520
+      },
+      {
+        "addr": "127.0.0.1:7004",
+        "evicted_keys": 0,
+        "hit_ratio": 1,
+        "role": "replica",
+        "samples": [
+          {
+            "blocked_clients": 0,
+            "connected_clients": 0,
+            "fragmentation_ratio": 0,
+            "hit_ratio": -1,
+            "net_in_kbps": 0,
+            "net_out_kbps": 0,
+            "offset_s": 1,
+            "ops_per_sec": 3000,
+            "used_memory": 20971520
+          },
+          {
+            "blocked_clients": 0,
+            "connected_clients": 0,
+            "fragmentation_ratio": 0,
+            "hit_ratio": -1,
+            "net_in_kbps": 0,
+            "net_out_kbps": 0,
+            "offset_s": 2,
+            "ops_per_sec": 3100,
+            "used_memory": 22020096
+          }
+        ],
+        "server_ops": 9000,
+        "slots": 0,
+        "slowlog_new": 0,
+        "used_memory_max": 20971520
+      }
+    ],
+    "poll_errors": 0,
+    "samples": [
+      {
+        "blocked_clients": 0,
+        "connected_clients": 0,
+        "fragmentation_ratio": 0,
+        "hit_ratio": -1,
+        "net_in_kbps": 0,
+        "net_out_kbps": 0,
+        "offset_s": 1,
+        "ops_per_sec": 3000,
+        "used_memory": 20971520
+      },
+      {
+        "blocked_clients": 0,
+        "connected_clients": 0,
+        "fragmentation_ratio": 0,
+        "hit_ratio": -1,
+        "net_in_kbps": 0,
+        "net_out_kbps": 0,
+        "offset_s": 2,
+        "ops_per_sec": 3100,
+        "used_memory": 22020096
+      }
+    ],
+    "slowlog": [],
+    "slowlog_new": 0,
+    "topology": {
+      "cluster_down": false,
+      "events": [
+        {
+          "detail": "slots 0-5460: primary changed from 127.0.0.1:7001 to 127.0.0.1:7004",
+          "kind": "failover",
+          "offset_s": 4
+        }
+      ],
+      "mode": "cluster",
+      "poll_errors": 0,
+      "shards": [
+        {
+          "primary": "127.0.0.1:7004",
+          "replicas": [
+            "127.0.0.1:7001"
+          ],
+          "slots": 5461
+        },
+        {
+          "primary": "127.0.0.1:7002",
+          "replicas": [],
+          "slots": 5462
+        },
+        {
+          "primary": "127.0.0.1:7003",
+          "replicas": [],
+          "slots": 5461
+        }
+      ]
+    },
+    "version": "9.1.3"
+  },
+  "server_metrics": true,
+  "started_at": "2026-11-04T10:00:00Z",
+  "state": "running"
+}

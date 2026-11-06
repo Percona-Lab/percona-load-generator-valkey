@@ -1,0 +1,18 @@
+# Record the commands a run sends, so they can be replayed with `plgv replay`.
+#   ./bin/plgv run -config examples/record.yaml
+#   ./bin/plgv replay -info /tmp/plgv-session.jsonl.zst
+# Single worker: the replay then sends the commands in exactly the recorded order.
+workload:
+  preset: session
+run:
+  duration: 10s
+  concurrency: 1
+  seed: 7
+record:
+  path: /tmp/plgv-session.jsonl.zst   # empty = not recording; .zst and .gz compress
+  compression: auto                   # auto, none, zstd or gzip
+  max_mb: 0                           # 0 = no limit
+  backpressure: fail                  # fail (stop recording if the writer lags) or block (workers wait)
+  outcomes: true                      # keep each command's status and latency
+  checksums: true                     # keep a checksum of each reply (implies outcomes)
+  data_fingerprint: true              # key count and key digest of the starting data

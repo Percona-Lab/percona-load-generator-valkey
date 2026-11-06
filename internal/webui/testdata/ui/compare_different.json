@@ -1,0 +1,197 @@
+{
+  "A": {
+    "critical": 0,
+    "dropped_ops": 0,
+    "duration_seconds": 2,
+    "errors": 0,
+    "fingerprint": "cceaf886dbc8",
+    "hit_ratio": 0.97,
+    "id": "20261104-100000",
+    "infos": 0,
+    "label": "cache baseline",
+    "loop": "",
+    "mix": "GET",
+    "ops": 100000,
+    "ops_per_sec": 50000,
+    "p50_ms": 1.015807,
+    "p95_ms": 1.015807,
+    "p99_ms": 2,
+    "peak_workers": 0,
+    "server_metrics": true,
+    "server_version": "9.1.3",
+    "started_at": "2026-11-04T10:00:00Z",
+    "stopped": false,
+    "target_mode": "standalone",
+    "warnings": 1
+  },
+  "B": {
+    "critical": 0,
+    "dropped_ops": 0,
+    "duration_seconds": 2,
+    "errors": 0,
+    "fingerprint": "e589ae75f90d",
+    "hit_ratio": -1,
+    "id": "20261104-130000",
+    "infos": 0,
+    "label": "client only",
+    "loop": "",
+    "mix": "HGET",
+    "ops": 90000,
+    "ops_per_sec": 45000,
+    "p50_ms": 1.015807,
+    "p95_ms": 1.015807,
+    "p99_ms": 2,
+    "peak_workers": 0,
+    "server_metrics": false,
+    "started_at": "2026-11-04T13:00:00Z",
+    "stopped": false,
+    "target_mode": "standalone",
+    "warnings": 0
+  },
+  "comparable": false,
+  "config_diffs": [
+    {
+      "a": "true",
+      "b": "false",
+      "key": "server_metrics.enabled"
+    },
+    {
+      "a": "GET",
+      "b": "HGET",
+      "key": "workload.mix[0].op"
+    },
+    {
+      "a": "80",
+      "b": "1",
+      "key": "workload.mix[0].weight"
+    },
+    {
+      "a": "SET",
+      "b": "",
+      "key": "workload.mix[1].op"
+    },
+    {
+      "a": "20",
+      "b": "",
+      "key": "workload.mix[1].weight"
+    }
+  ],
+  "findings_only_in_a": [
+    "slow-commands"
+  ],
+  "findings_only_in_b": [],
+  "metrics": [
+    {
+      "a": 50000,
+      "b": 45000,
+      "better": "a",
+      "change_pct": -0.1,
+      "higher_is_good": true,
+      "name": "Throughput",
+      "unit": "ops/s"
+    },
+    {
+      "a": 1.015807,
+      "b": 1.015807,
+      "better": "same",
+      "change_pct": 0,
+      "higher_is_good": false,
+      "name": "p50 latency",
+      "unit": "ms"
+    },
+    {
+      "a": 1.015807,
+      "b": 1.015807,
+      "better": "same",
+      "change_pct": 0,
+      "higher_is_good": false,
+      "name": "p95 latency",
+      "unit": "ms"
+    },
+    {
+      "a": 2,
+      "b": 2,
+      "better": "same",
+      "change_pct": 0,
+      "higher_is_good": false,
+      "name": "p99 latency",
+      "unit": "ms"
+    },
+    {
+      "a": 2,
+      "b": 2,
+      "better": "same",
+      "change_pct": 0,
+      "higher_is_good": false,
+      "name": "p99.9 latency",
+      "unit": "ms"
+    },
+    {
+      "a": 2,
+      "b": 2,
+      "better": "same",
+      "change_pct": 0,
+      "higher_is_good": false,
+      "name": "max latency",
+      "unit": "ms"
+    },
+    {
+      "a": 0,
+      "b": 0,
+      "better": "same",
+      "change_pct": 0,
+      "higher_is_good": false,
+      "name": "Errors",
+      "unit": ""
+    },
+    {
+      "a": 1,
+      "b": 1.1111111111111112,
+      "better": "a",
+      "change_pct": 0.11111111111111116,
+      "higher_is_good": false,
+      "name": "Client CPU per 100k ops/s",
+      "unit": "cores"
+    }
+  ],
+  "per_op": [
+    {
+      "a_ops": 100000,
+      "a_p99_ms": 0,
+      "b_ops": 0,
+      "b_p99_ms": 0,
+      "op": "GET"
+    },
+    {
+      "a_ops": 0,
+      "a_p99_ms": 0,
+      "b_ops": 90000,
+      "b_p99_ms": 0,
+      "op": "HGET"
+    }
+  ],
+  "series_a": [
+    {
+      "errors": 0,
+      "max_ms": 0,
+      "offset_s": 1,
+      "ops_per_sec": 50000,
+      "p50_ms": 1,
+      "p95_ms": 0,
+      "p99_ms": 2,
+      "workers": 0
+    }
+  ],
+  "series_b": [
+    {
+      "errors": 0,
+      "max_ms": 0,
+      "offset_s": 1,
+      "ops_per_sec": 45000,
+      "p50_ms": 1,
+      "p95_ms": 0,
+      "p99_ms": 2,
+      "workers": 0
+    }
+  ]
+}

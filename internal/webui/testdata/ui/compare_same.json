@@ -1,0 +1,199 @@
+{
+  "A": {
+    "critical": 0,
+    "dropped_ops": 0,
+    "duration_seconds": 2,
+    "errors": 0,
+    "fingerprint": "cceaf886dbc8",
+    "hit_ratio": 0.97,
+    "id": "20261104-100000",
+    "infos": 0,
+    "label": "cache baseline",
+    "loop": "",
+    "mix": "GET",
+    "ops": 100000,
+    "ops_per_sec": 50000,
+    "p50_ms": 1.015807,
+    "p95_ms": 1.015807,
+    "p99_ms": 2,
+    "peak_workers": 0,
+    "server_metrics": true,
+    "server_version": "9.1.3",
+    "started_at": "2026-11-04T10:00:00Z",
+    "stopped": false,
+    "target_mode": "standalone",
+    "warnings": 1
+  },
+  "B": {
+    "critical": 0,
+    "dropped_ops": 0,
+    "duration_seconds": 2,
+    "errors": 0,
+    "fingerprint": "cceaf886dbc8",
+    "hit_ratio": 0.97,
+    "id": "20261104-120000",
+    "infos": 0,
+    "label": "cache baseline",
+    "loop": "",
+    "mix": "GET",
+    "ops": 99000,
+    "ops_per_sec": 49500,
+    "p50_ms": 1.015807,
+    "p95_ms": 1.015807,
+    "p99_ms": 3,
+    "peak_workers": 0,
+    "server_metrics": true,
+    "server_version": "9.1.3",
+    "started_at": "2026-11-04T12:00:00Z",
+    "stopped": false,
+    "target_mode": "standalone",
+    "warnings": 1
+  },
+  "comparable": true,
+  "config_diffs": [],
+  "findings_only_in_a": [],
+  "findings_only_in_b": [],
+  "metrics": [
+    {
+      "a": 50000,
+      "b": 49500,
+      "better": "same",
+      "change_pct": -0.01,
+      "higher_is_good": true,
+      "name": "Throughput",
+      "unit": "ops/s"
+    },
+    {
+      "a": 1.015807,
+      "b": 1.015807,
+      "better": "same",
+      "change_pct": 0,
+      "higher_is_good": false,
+      "name": "p50 latency",
+      "unit": "ms"
+    },
+    {
+      "a": 1.015807,
+      "b": 1.015807,
+      "better": "same",
+      "change_pct": 0,
+      "higher_is_good": false,
+      "name": "p95 latency",
+      "unit": "ms"
+    },
+    {
+      "a": 2,
+      "b": 3,
+      "better": "a",
+      "change_pct": 0.5,
+      "higher_is_good": false,
+      "name": "p99 latency",
+      "unit": "ms"
+    },
+    {
+      "a": 2,
+      "b": 3,
+      "better": "a",
+      "change_pct": 0.5,
+      "higher_is_good": false,
+      "name": "p99.9 latency",
+      "unit": "ms"
+    },
+    {
+      "a": 2,
+      "b": 3,
+      "better": "a",
+      "change_pct": 0.5,
+      "higher_is_good": false,
+      "name": "max latency",
+      "unit": "ms"
+    },
+    {
+      "a": 0,
+      "b": 0,
+      "better": "same",
+      "change_pct": 0,
+      "higher_is_good": false,
+      "name": "Errors",
+      "unit": ""
+    },
+    {
+      "a": 1,
+      "b": 1.0101010101010102,
+      "better": "same",
+      "change_pct": 0.010101010101010166,
+      "higher_is_good": false,
+      "name": "Client CPU per 100k ops/s",
+      "unit": "cores"
+    },
+    {
+      "a": 97,
+      "b": 97,
+      "better": "same",
+      "change_pct": 2.7469435660828616e-17,
+      "higher_is_good": true,
+      "name": "Hit ratio",
+      "unit": "%"
+    },
+    {
+      "a": 52,
+      "b": 52,
+      "better": "same",
+      "change_pct": 0,
+      "higher_is_good": false,
+      "name": "Server peak memory",
+      "unit": "MiB"
+    },
+    {
+      "a": 0,
+      "b": 0,
+      "better": "same",
+      "change_pct": 0,
+      "higher_is_good": false,
+      "name": "Evicted keys",
+      "unit": ""
+    },
+    {
+      "a": 2,
+      "b": 2,
+      "better": "same",
+      "change_pct": 0,
+      "higher_is_good": false,
+      "name": "New slowlog entries",
+      "unit": ""
+    }
+  ],
+  "per_op": [
+    {
+      "a_ops": 100000,
+      "a_p99_ms": 0,
+      "b_ops": 99000,
+      "b_p99_ms": 0,
+      "op": "GET"
+    }
+  ],
+  "series_a": [
+    {
+      "errors": 0,
+      "max_ms": 0,
+      "offset_s": 1,
+      "ops_per_sec": 50000,
+      "p50_ms": 1,
+      "p95_ms": 0,
+      "p99_ms": 2,
+      "workers": 0
+    }
+  ],
+  "series_b": [
+    {
+      "errors": 0,
+      "max_ms": 0,
+      "offset_s": 1,
+      "ops_per_sec": 49500,
+      "p50_ms": 1,
+      "p95_ms": 0,
+      "p99_ms": 3,
+      "workers": 0
+    }
+  ]
+}

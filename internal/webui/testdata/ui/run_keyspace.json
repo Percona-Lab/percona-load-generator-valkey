@@ -1,0 +1,258 @@
+{
+  "client": {
+    "cores_per_100k_ops": 1.1111111111111112,
+    "cpu_cores": 0.1,
+    "elapsed_seconds": 10,
+    "errors": 0,
+    "load_profile": "",
+    "loop": "closed",
+    "max_ms": 1,
+    "mean_ms": 1,
+    "misses": 0,
+    "nodes": [
+      {
+        "addr": "127.0.0.1:7001",
+        "errors": 0,
+        "ops": 30000,
+        "share_pct": 33.33333333333333
+      },
+      {
+        "addr": "127.0.0.1:7002",
+        "errors": 4,
+        "ops": 30000,
+        "share_pct": 33.33333333333333
+      },
+      {
+        "addr": "127.0.0.1:7003",
+        "errors": 0,
+        "ops": 30000,
+        "share_pct": 33.33333333333333
+      },
+      {
+        "addr": "127.0.0.1:7004",
+        "errors": 0,
+        "ops": 0,
+        "share_pct": 0
+      }
+    ],
+    "ops": 90000,
+    "ops_per_sec": 9000,
+    "p50_ms": 1,
+    "p95_ms": 1,
+    "p999_ms": 1,
+    "p99_ms": 1,
+    "peak_workers": 0,
+    "series_factor": 1,
+    "target_mode": "cluster"
+  },
+  "config_yaml": "target:\n    uris:\n        - valkey://127.0.0.1:6379\n    mode: auto\n    client: valkey-go\n    sentinel:\n        master_name: \"\"\n    read_from_replicas: false\n    pool:\n        pipeline_depth: 1\n    tls:\n        enabled: false\n        ca_file: \"\"\n        cert_file: \"\"\n        key_file: \"\"\n        server_name: \"\"\n        insecure_skip_verify: false\nrun:\n    duration: 10s\n    concurrency: 16\n    seed: 1\n    op_budget: 0\n    deterministic: false\n    target_ops_per_sec: 0\n    coordinated_omission: false\n    loop: closed\n    load_profile:\n        kind: fixed\n        workers: 0\n        start_workers: 0\n        end_workers: 0\n        ramp_over: \"\"\n        steps: []\n        base_workers: 0\n        peak_workers: 0\n        spike_at: \"\"\n        spike_for: \"\"\n        min_workers: 0\n        max_workers: 0\n        period: \"\"\n    sweep:\n        kind: none\n        values: []\n        pause: 0s\ndataset:\n    key_count: 50\n    key_prefix: 'plgv:'\n    key_distribution: uniform\n    zipf_s: 0\n    value_size: 128\n    collection_size: 10000\n    hash_tag_groups: 0\n    hash_fields: 1000\n    bitmap_bits: 10000\n    stream_length: 20\n    ttl:\n        mode: none\n        seconds: 300\n        min_seconds: 60\n        max_seconds: 3600\n        fraction: 1\n    preload: true\nworkload:\n    preset: big-keys\n    mix:\n        - op: HGETALL\n          weight: 20\n        - op: SMEMBERS\n          weight: 15\n        - op: LRANGE\n          weight: 20\n          count: 1000\n        - op: ZRANGE\n          weight: 20\n          count: 1000\n        - op: SADD\n          weight: 10\n        - op: ZADD\n          weight: 10\n        - op: HSET\n          weight: 5\n          fields: 4\n    pubsub:\n        subscribers: 0\n        channels: 16\n        sharded: false\n    allow_dangerous: false\nserver_metrics:\n    enabled: false\n    interval: 1s\n    slowlog: true\n    slowlog_entries: 128\n    latency: true\nkeyspace_analysis:\n    enabled: true\n    samples: 10000\n    top: 10\n    match: \"\"\nrecord:\n    path: \"\"\n    compression: auto\n    max_mb: 0\n    backpressure: fail\n    outcomes: false\n    checksums: false\n    data_fingerprint: true\noutput:\n    sample_interval: 1s\n    summary_file: \"\"\n",
+  "findings": [
+    {
+      "advice": "Commands that read or delete a whole big key (HGETALL, SMEMBERS, LRANGE 0 -1, DEL) block the server while they run and show up as tail latency. Split the key into smaller ones, page through it (HSCAN, SSCAN, ZRANGE with LIMIT), and delete with UNLINK.",
+      "evidence": "In all 200 keys, plgv:l:0 (list, 10000 elements) is the biggest; 50 sampled keys are 1 MiB or more",
+      "id": "big-keys",
+      "severity": "info",
+      "title": "Big keys found: the largest is 1.4 MiB"
+    }
+  ],
+  "fingerprint": "9c5c88f26852",
+  "finished_at": "2026-11-04T22:00:10Z",
+  "keyspace": {
+    "big_keys": [
+      {
+        "bytes": 1433600,
+        "elements": 10000,
+        "key": "plgv:l:0",
+        "ttl_seconds": -1,
+        "type": "list"
+      },
+      {
+        "bytes": 1433600,
+        "elements": 10000,
+        "key": "plgv:l:1",
+        "ttl_seconds": -1,
+        "type": "list"
+      },
+      {
+        "bytes": 706560,
+        "elements": 10000,
+        "key": "plgv:z:4",
+        "ttl_seconds": 3600,
+        "type": "zset"
+      }
+    ],
+    "complete": true,
+    "db_size": 200,
+    "duration_ms": 0,
+    "errors": 0,
+    "gone": 0,
+    "match": "plgv:*",
+    "max_bytes": 1433600,
+    "no_expiry": 200,
+    "over_1mib": 50,
+    "p50_bytes": 232448,
+    "p99_bytes": 1433600,
+    "requested": 10000,
+    "sampled": 200,
+    "sizes": [
+      {
+        "keys": 0,
+        "label": "under 128 B"
+      },
+      {
+        "keys": 0,
+        "label": "128 B to 1 KiB"
+      },
+      {
+        "keys": 0,
+        "label": "1 to 10 KiB"
+      },
+      {
+        "keys": 0,
+        "label": "10 to 100 KiB"
+      },
+      {
+        "keys": 150,
+        "label": "100 KiB to 1 MiB"
+      },
+      {
+        "keys": 50,
+        "label": "1 to 10 MiB"
+      },
+      {
+        "keys": 0,
+        "label": "10 MiB or more"
+      }
+    ],
+    "sources": 1,
+    "total_bytes": 123731968,
+    "ttl": [
+      {
+        "keys": 200,
+        "label": "no expiry"
+      },
+      {
+        "keys": 0,
+        "label": "under 1 min"
+      },
+      {
+        "keys": 0,
+        "label": "1 to 10 min"
+      },
+      {
+        "keys": 0,
+        "label": "10 min to 1 h"
+      },
+      {
+        "keys": 0,
+        "label": "1 h to 1 day"
+      },
+      {
+        "keys": 0,
+        "label": "1 day or more"
+      }
+    ],
+    "types": [
+      {
+        "avg_bytes": 1382400,
+        "avg_elements": 10000,
+        "bytes": 69206016,
+        "keys": 50,
+        "max_bytes": 1433600,
+        "max_elements": 10000,
+        "share": 0.25,
+        "type": "list"
+      },
+      {
+        "avg_bytes": 612352,
+        "avg_elements": 10000,
+        "bytes": 30408704,
+        "keys": 50,
+        "max_bytes": 706560,
+        "max_elements": 10000,
+        "share": 0.25,
+        "type": "zset"
+      },
+      {
+        "avg_bytes": 232448,
+        "avg_elements": 10000,
+        "bytes": 11534336,
+        "keys": 50,
+        "max_bytes": 232448,
+        "max_elements": 10000,
+        "share": 0.25,
+        "type": "set"
+      },
+      {
+        "avg_bytes": 197632,
+        "avg_elements": 1000,
+        "bytes": 9437184,
+        "keys": 50,
+        "max_bytes": 197632,
+        "max_elements": 1000,
+        "share": 0.25,
+        "type": "hash"
+      }
+    ]
+  },
+  "label": "big keys",
+  "per_op": [
+    {
+      "errors": 0,
+      "max_ms": 0,
+      "misses": 0,
+      "op": "GET",
+      "ops": 72000,
+      "p50_ms": 0,
+      "p99_ms": 0
+    },
+    {
+      "errors": 0,
+      "max_ms": 0,
+      "misses": 0,
+      "op": "SET",
+      "ops": 18000,
+      "p50_ms": 0,
+      "p99_ms": 0
+    }
+  ],
+  "schema_version": 1,
+  "seed": 1,
+  "series": [
+    {
+      "errors": 0,
+      "max_ms": 0,
+      "node_ops": [
+        3000,
+        3000,
+        3000,
+        0
+      ],
+      "offset_s": 1,
+      "ops_per_sec": 9000,
+      "p50_ms": 1,
+      "p95_ms": 0,
+      "p99_ms": 2,
+      "workers": 0
+    },
+    {
+      "errors": 0,
+      "max_ms": 0,
+      "node_ops": [
+        0,
+        3000,
+        3000,
+        3000
+      ],
+      "offset_s": 2,
+      "ops_per_sec": 9000,
+      "p50_ms": 1,
+      "p95_ms": 0,
+      "p99_ms": 2,
+      "workers": 0
+    }
+  ],
+  "started_at": "2026-11-04T22:00:00Z",
+  "tool": "plgv",
+  "tool_version": "test"
+}

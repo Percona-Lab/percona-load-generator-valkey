@@ -1,0 +1,10 @@
+# Offer 50,000 ops/s no matter how the server keeps up. Latency includes the time
+# operations wait to be sent, and operations that never got sent are counted.
+# Run: ./bin/plgv run -config examples/open-loop.yaml
+run:
+  duration: 20s
+  concurrency: 64
+  loop: open
+  target_ops_per_sec: 50000
+dataset:
+  key_count: 50000

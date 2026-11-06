@@ -1,0 +1,54 @@
+# One load run as a Job. Results are in the Pod log (and /tmp/summary.json in the Pod).
+#   kubectl -n plgv logs job/plgv-run
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: plgv-run
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: plgv
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: plgv
+          image: plgv:latest
+          args: ["run", "-config", "/config/plgv.yaml"]
+          env:
+            # Mounted secret files, read at start; a file wins over PLGV_USERNAME / PLGV_PASSWORD.
+            - name: PLGV_USERNAME_FILE
+              value: /secrets/username
+            - name: PLGV_PASSWORD_FILE
+              value: /secrets/password
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests: {cpu: "1", memory: 256Mi}
+            limits: {cpu: "4", memory: 1Gi}
+          volumeMounts:
+            - {name: config, mountPath: /config, readOnly: true}
+            - {name: credentials, mountPath: /secrets, readOnly: true}
+            - {name: tls, mountPath: /tls, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: config
+          configMap: {name: plgv-config}
+        - name: credentials
+          secret: {secretName: plgv-credentials}
+        - name: tls
+          secret: {secretName: plgv-tls, optional: true}
+        - name: tmp
+          emptyDir: {}

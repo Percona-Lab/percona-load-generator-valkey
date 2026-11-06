@@ -1,0 +1,12 @@
+# A work queue: producers push, consumers block on BRPOP / XREAD_BLOCK.
+# Misses on blocking reads are timeouts (nothing arrived in time).
+#   ./bin/plgv run -config examples/blocking-queue.yaml
+run: {duration: 20s, concurrency: 16}
+dataset: {key_count: 50, preload: false}
+workload:
+  mix:
+    - {op: LPUSH, weight: 6}
+    - {op: BRPOP, weight: 3, timeout: 200ms}
+    - {op: BLPOP, weight: 1, timeout: 200ms}
+    - {op: XADD, weight: 2}
+    - {op: XREAD_BLOCK, weight: 1, timeout: 200ms}

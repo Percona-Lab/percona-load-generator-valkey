@@ -1,0 +1,13 @@
+{
+  "active_workers": 0,
+  "duration_seconds": 0,
+  "elapsed_seconds": 0,
+  "errors": 0,
+  "misses": 0,
+  "ops": 0,
+  "per_op": [],
+  "series": [],
+  "server_metrics": false,
+  "started_at": "0001-01-01T00:00:00Z",
+  "state": "idle"
+}

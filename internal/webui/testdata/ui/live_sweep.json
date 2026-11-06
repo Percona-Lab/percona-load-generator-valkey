@@ -1,0 +1,50 @@
+{
+  "active_workers": 8,
+  "duration_seconds": 10,
+  "elapsed_seconds": 3,
+  "errors": 0,
+  "label": "mysweep",
+  "misses": 0,
+  "ops": 90000,
+  "per_op": [
+    {
+      "errors": 0,
+      "misses": 0,
+      "op": "GET",
+      "ops": 72000,
+      "p99_ms": 1.2
+    },
+    {
+      "errors": 0,
+      "misses": 0,
+      "op": "SET",
+      "ops": 18000,
+      "p99_ms": 1.2
+    }
+  ],
+  "series": [
+    {
+      "errors": 0,
+      "max_ms": 3,
+      "offset_s": 1,
+      "ops_per_sec": 78000,
+      "p50_ms": 0.3,
+      "p95_ms": 0.9,
+      "p99_ms": 1.2,
+      "workers": 8
+    }
+  ],
+  "server_metrics": false,
+  "started_at": "2026-11-04T10:00:00Z",
+  "state": "running",
+  "sweep": {
+    "id": "swtest",
+    "index": 2,
+    "kind": "workers",
+    "run_ids": [
+      "20261104-120000"
+    ],
+    "total": 4,
+    "value": 8
+  }
+}

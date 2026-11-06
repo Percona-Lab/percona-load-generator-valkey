@@ -1,0 +1,10 @@
+# MULTI/EXEC, a pipeline group, and optimistic locking with WATCH.
+# Misses on WATCH_INCR are transactions aborted by a conflicting writer.
+#   ./bin/plgv run -config examples/transactions.yaml
+run: {duration: 20s, concurrency: 32}
+dataset: {key_count: 100, preload: true}      # few keys: conflicts are likely
+workload:
+  mix:
+    - {op: TXN, weight: 3, steps: [{op: GET}, {op: SET}, {op: INCR}]}
+    - {op: PIPELINE, weight: 2, steps: [{op: GET}, {op: GET}, {op: HGET}]}
+    - {op: WATCH_INCR, weight: 3}

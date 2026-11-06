@@ -1,0 +1,1551 @@
+{
+  "credentials_from_env": false,
+  "defaults": {
+    "dataset": {
+      "bitmap_bits": 10000,
+      "collection_size": 100,
+      "hash_fields": 8,
+      "hash_tag_groups": 0,
+      "key_count": 100000,
+      "key_distribution": "uniform",
+      "key_prefix": "plgv:",
+      "preload": true,
+      "stream_length": 20,
+      "ttl": {
+        "fraction": 1,
+        "max_seconds": 3600,
+        "min_seconds": 60,
+        "mode": "none",
+        "seconds": 300
+      },
+      "value_size": 256,
+      "zipf_s": 0
+    },
+    "keyspace_analysis": {
+      "enabled": false,
+      "match": "",
+      "samples": 10000,
+      "top": 10
+    },
+    "output": {
+      "sample_interval": "1s",
+      "summary_file": ""
+    },
+    "record": {
+      "backpressure": "fail",
+      "checksums": false,
+      "compression": "auto",
+      "data_fingerprint": true,
+      "max_mb": 0,
+      "outcomes": false,
+      "path": ""
+    },
+    "run": {
+      "concurrency": 64,
+      "coordinated_omission": false,
+      "deterministic": false,
+      "duration": "10s",
+      "load_profile": {
+        "base_workers": 0,
+        "end_workers": 0,
+        "kind": "fixed",
+        "max_workers": 0,
+        "min_workers": 0,
+        "peak_workers": 0,
+        "period": "",
+        "ramp_over": "",
+        "spike_at": "",
+        "spike_for": "",
+        "start_workers": 0,
+        "steps": [],
+        "workers": 0
+      },
+      "loop": "closed",
+      "op_budget": 0,
+      "seed": 1,
+      "sweep": {
+        "kind": "none",
+        "pause": "0s",
+        "values": []
+      },
+      "target_ops_per_sec": 0
+    },
+    "server_metrics": {
+      "enabled": false,
+      "interval": "1s",
+      "latency": true,
+      "slowlog": true,
+      "slowlog_entries": 128
+    },
+    "target": {
+      "client": "valkey-go",
+      "mode": "auto",
+      "pool": {
+        "pipeline_depth": 1
+      },
+      "read_from_replicas": false,
+      "sentinel": {
+        "master_name": ""
+      },
+      "tls": {
+        "ca_file": "",
+        "cert_file": "",
+        "enabled": false,
+        "insecure_skip_verify": false,
+        "key_file": "",
+        "server_name": ""
+      },
+      "uris": [
+        "valkey://127.0.0.1:6379"
+      ]
+    },
+    "workload": {
+      "allow_dangerous": false,
+      "mix": [
+        {
+          "op": "GET",
+          "weight": 80
+        },
+        {
+          "op": "SET",
+          "weight": 20
+        }
+      ],
+      "pubsub": {
+        "channels": 16,
+        "sharded": false,
+        "subscribers": 0
+      }
+    }
+  },
+  "op_names": [
+    "APPEND",
+    "BITCOUNT",
+    "BLPOP",
+    "BRPOP",
+    "DEL",
+    "EVAL",
+    "EVALSHA",
+    "EXISTS",
+    "EXPIRE",
+    "FCALL",
+    "GEOADD",
+    "GEODIST",
+    "GEOPOS",
+    "GEOSEARCH",
+    "GET",
+    "GETBIT",
+    "GETEX",
+    "HDEL",
+    "HGET",
+    "HGETALL",
+    "HINCRBY",
+    "HSET",
+    "INCR",
+    "LLEN",
+    "LPOP",
+    "LPUSH",
+    "LRANGE",
+    "MGET",
+    "MSET",
+    "PFADD",
+    "PFCOUNT",
+    "PIPELINE",
+    "PUBLISH",
+    "RAW",
+    "RPOP",
+    "RPUSH",
+    "SADD",
+    "SCAN",
+    "SCARD",
+    "SET",
+    "SETBIT",
+    "SETEX",
+    "SISMEMBER",
+    "SMEMBERS",
+    "SPUBLISH",
+    "SRANDMEMBER",
+    "SREM",
+    "TTL",
+    "TXN",
+    "UNLINK",
+    "WATCH_INCR",
+    "XADD",
+    "XCONSUME",
+    "XLEN",
+    "XPENDING",
+    "XRANGE",
+    "XREAD",
+    "XREADGROUP",
+    "XREAD_BLOCK",
+    "XTRIM",
+    "ZADD",
+    "ZCARD",
+    "ZINCRBY",
+    "ZRANGE",
+    "ZRANGEBYSCORE",
+    "ZRANK",
+    "ZREM",
+    "ZSCORE"
+  ],
+  "ops": {
+    "APPEND": {
+      "Command": false,
+      "Count": false,
+      "Family": "string",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "BITCOUNT": {
+      "Command": false,
+      "Count": false,
+      "Family": "bitmap",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "BLPOP": {
+      "Command": false,
+      "Count": false,
+      "Family": "list",
+      "Fields": false,
+      "Kind": "solo",
+      "Script": false,
+      "Steps": false,
+      "Timeout": true,
+      "Type": false
+    },
+    "BRPOP": {
+      "Command": false,
+      "Count": false,
+      "Family": "list",
+      "Fields": false,
+      "Kind": "solo",
+      "Script": false,
+      "Steps": false,
+      "Timeout": true,
+      "Type": false
+    },
+    "DEL": {
+      "Command": false,
+      "Count": false,
+      "Family": "key",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": true
+    },
+    "EVAL": {
+      "Command": false,
+      "Count": false,
+      "Family": "script",
+      "Fields": false,
+      "Kind": "",
+      "Script": true,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "EVALSHA": {
+      "Command": false,
+      "Count": false,
+      "Family": "script",
+      "Fields": false,
+      "Kind": "",
+      "Script": true,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "EXISTS": {
+      "Command": false,
+      "Count": false,
+      "Family": "key",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": true
+    },
+    "EXPIRE": {
+      "Command": false,
+      "Count": false,
+      "Family": "key",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": true
+    },
+    "FCALL": {
+      "Command": false,
+      "Count": false,
+      "Family": "script",
+      "Fields": false,
+      "Kind": "",
+      "Script": true,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "GEOADD": {
+      "Command": false,
+      "Count": false,
+      "Family": "geo",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "GEODIST": {
+      "Command": false,
+      "Count": false,
+      "Family": "geo",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "GEOPOS": {
+      "Command": false,
+      "Count": false,
+      "Family": "geo",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "GEOSEARCH": {
+      "Command": false,
+      "Count": true,
+      "Family": "geo",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "GET": {
+      "Command": false,
+      "Count": false,
+      "Family": "string",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "GETBIT": {
+      "Command": false,
+      "Count": false,
+      "Family": "bitmap",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "GETEX": {
+      "Command": false,
+      "Count": false,
+      "Family": "string",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "HDEL": {
+      "Command": false,
+      "Count": false,
+      "Family": "hash",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "HGET": {
+      "Command": false,
+      "Count": false,
+      "Family": "hash",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "HGETALL": {
+      "Command": false,
+      "Count": false,
+      "Family": "hash",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "HINCRBY": {
+      "Command": false,
+      "Count": false,
+      "Family": "hash",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "HSET": {
+      "Command": false,
+      "Count": false,
+      "Family": "hash",
+      "Fields": true,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "INCR": {
+      "Command": false,
+      "Count": false,
+      "Family": "string",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "LLEN": {
+      "Command": false,
+      "Count": false,
+      "Family": "list",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "LPOP": {
+      "Command": false,
+      "Count": false,
+      "Family": "list",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "LPUSH": {
+      "Command": false,
+      "Count": false,
+      "Family": "list",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "LRANGE": {
+      "Command": false,
+      "Count": true,
+      "Family": "list",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "MGET": {
+      "Command": false,
+      "Count": true,
+      "Family": "string",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "MSET": {
+      "Command": false,
+      "Count": true,
+      "Family": "string",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "PFADD": {
+      "Command": false,
+      "Count": false,
+      "Family": "hll",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "PFCOUNT": {
+      "Command": false,
+      "Count": false,
+      "Family": "hll",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "PIPELINE": {
+      "Command": false,
+      "Count": false,
+      "Family": "txn",
+      "Fields": false,
+      "Kind": "composite",
+      "Script": false,
+      "Steps": true,
+      "Timeout": false,
+      "Type": false
+    },
+    "PUBLISH": {
+      "Command": false,
+      "Count": false,
+      "Family": "pubsub",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "RAW": {
+      "Command": true,
+      "Count": false,
+      "Family": "raw",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "RPOP": {
+      "Command": false,
+      "Count": false,
+      "Family": "list",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "RPUSH": {
+      "Command": false,
+      "Count": false,
+      "Family": "list",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "SADD": {
+      "Command": false,
+      "Count": false,
+      "Family": "set",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "SCAN": {
+      "Command": false,
+      "Count": true,
+      "Family": "key",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": true
+    },
+    "SCARD": {
+      "Command": false,
+      "Count": false,
+      "Family": "set",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "SET": {
+      "Command": false,
+      "Count": false,
+      "Family": "string",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "SETBIT": {
+      "Command": false,
+      "Count": false,
+      "Family": "bitmap",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "SETEX": {
+      "Command": false,
+      "Count": false,
+      "Family": "string",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "SISMEMBER": {
+      "Command": false,
+      "Count": false,
+      "Family": "set",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "SMEMBERS": {
+      "Command": false,
+      "Count": false,
+      "Family": "set",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "SPUBLISH": {
+      "Command": false,
+      "Count": false,
+      "Family": "pubsub",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "SRANDMEMBER": {
+      "Command": false,
+      "Count": true,
+      "Family": "set",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "SREM": {
+      "Command": false,
+      "Count": false,
+      "Family": "set",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "TTL": {
+      "Command": false,
+      "Count": false,
+      "Family": "key",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": true
+    },
+    "TXN": {
+      "Command": false,
+      "Count": false,
+      "Family": "txn",
+      "Fields": false,
+      "Kind": "composite",
+      "Script": false,
+      "Steps": true,
+      "Timeout": false,
+      "Type": false
+    },
+    "UNLINK": {
+      "Command": false,
+      "Count": false,
+      "Family": "key",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": true
+    },
+    "WATCH_INCR": {
+      "Command": false,
+      "Count": false,
+      "Family": "txn",
+      "Fields": false,
+      "Kind": "composite",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "XADD": {
+      "Command": false,
+      "Count": false,
+      "Family": "stream",
+      "Fields": true,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "XCONSUME": {
+      "Command": false,
+      "Count": true,
+      "Family": "stream",
+      "Fields": false,
+      "Kind": "composite",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "XLEN": {
+      "Command": false,
+      "Count": false,
+      "Family": "stream",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "XPENDING": {
+      "Command": false,
+      "Count": false,
+      "Family": "stream",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "XRANGE": {
+      "Command": false,
+      "Count": true,
+      "Family": "stream",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "XREAD": {
+      "Command": false,
+      "Count": true,
+      "Family": "stream",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "XREADGROUP": {
+      "Command": false,
+      "Count": true,
+      "Family": "stream",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "XREAD_BLOCK": {
+      "Command": false,
+      "Count": true,
+      "Family": "stream",
+      "Fields": false,
+      "Kind": "solo",
+      "Script": false,
+      "Steps": false,
+      "Timeout": true,
+      "Type": false
+    },
+    "XTRIM": {
+      "Command": false,
+      "Count": false,
+      "Family": "stream",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "ZADD": {
+      "Command": false,
+      "Count": false,
+      "Family": "zset",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "ZCARD": {
+      "Command": false,
+      "Count": false,
+      "Family": "zset",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "ZINCRBY": {
+      "Command": false,
+      "Count": false,
+      "Family": "zset",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "ZRANGE": {
+      "Command": false,
+      "Count": true,
+      "Family": "zset",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "ZRANGEBYSCORE": {
+      "Command": false,
+      "Count": true,
+      "Family": "zset",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "ZRANK": {
+      "Command": false,
+      "Count": false,
+      "Family": "zset",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "ZREM": {
+      "Command": false,
+      "Count": false,
+      "Family": "zset",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    },
+    "ZSCORE": {
+      "Command": false,
+      "Count": false,
+      "Family": "zset",
+      "Fields": false,
+      "Kind": "",
+      "Script": false,
+      "Steps": false,
+      "Timeout": false,
+      "Type": false
+    }
+  },
+  "presets": [
+    {
+      "concurrency": 64,
+      "dataset": {
+        "bitmap_bits": 10000,
+        "collection_size": 100,
+        "hash_fields": 8,
+        "hash_tag_groups": 16,
+        "key_count": 100000,
+        "key_distribution": "zipf",
+        "key_prefix": "plgv:",
+        "preload": true,
+        "stream_length": 20,
+        "ttl": {
+          "fraction": 1,
+          "max_seconds": 600,
+          "min_seconds": 60,
+          "mode": "random",
+          "seconds": 300
+        },
+        "value_size": 512,
+        "zipf_s": 1.1
+      },
+      "description": "Read-heavy key/value cache: hot keys (zipf), values that expire, a few multi-key reads and deletes.",
+      "name": "cache",
+      "title": "Cache",
+      "workload": {
+        "allow_dangerous": false,
+        "mix": [
+          {
+            "op": "GET",
+            "weight": 80
+          },
+          {
+            "op": "SET",
+            "weight": 10
+          },
+          {
+            "count": 5,
+            "op": "MGET",
+            "weight": 4
+          },
+          {
+            "op": "DEL",
+            "weight": 3
+          },
+          {
+            "op": "EXPIRE",
+            "weight": 3
+          }
+        ],
+        "preset": "cache",
+        "pubsub": {
+          "channels": 16,
+          "sharded": false,
+          "subscribers": 0
+        }
+      }
+    },
+    {
+      "concurrency": 64,
+      "dataset": {
+        "bitmap_bits": 10000,
+        "collection_size": 100,
+        "hash_fields": 8,
+        "hash_tag_groups": 0,
+        "key_count": 100000,
+        "key_distribution": "uniform",
+        "key_prefix": "plgv:",
+        "preload": true,
+        "stream_length": 20,
+        "ttl": {
+          "fraction": 1,
+          "max_seconds": 3600,
+          "min_seconds": 60,
+          "mode": "none",
+          "seconds": 300
+        },
+        "value_size": 128,
+        "zipf_s": 0
+      },
+      "description": "User sessions as hashes with a sliding expiry: create, read a field, read all, touch.",
+      "name": "session",
+      "title": "Session store",
+      "workload": {
+        "allow_dangerous": false,
+        "mix": [
+          {
+            "fields": 4,
+            "op": "HSET",
+            "weight": 15
+          },
+          {
+            "op": "HGET",
+            "weight": 45
+          },
+          {
+            "op": "HGETALL",
+            "weight": 15
+          },
+          {
+            "op": "EXPIRE",
+            "type": "hash",
+            "weight": 20
+          },
+          {
+            "op": "DEL",
+            "type": "hash",
+            "weight": 5
+          }
+        ],
+        "preset": "session",
+        "pubsub": {
+          "channels": 16,
+          "sharded": false,
+          "subscribers": 0
+        }
+      }
+    },
+    {
+      "concurrency": 64,
+      "dataset": {
+        "bitmap_bits": 10000,
+        "collection_size": 1000,
+        "hash_fields": 8,
+        "hash_tag_groups": 0,
+        "key_count": 1000,
+        "key_distribution": "zipf",
+        "key_prefix": "plgv:",
+        "preload": true,
+        "stream_length": 20,
+        "ttl": {
+          "fraction": 1,
+          "max_seconds": 3600,
+          "min_seconds": 60,
+          "mode": "none",
+          "seconds": 300
+        },
+        "value_size": 256,
+        "zipf_s": 1.2
+      },
+      "description": "Sorted-set ranking: score updates, rank and score lookups, top-N pages. A few boards (hot keys).",
+      "name": "leaderboard",
+      "title": "Leaderboard",
+      "workload": {
+        "allow_dangerous": false,
+        "mix": [
+          {
+            "op": "ZADD",
+            "weight": 15
+          },
+          {
+            "op": "ZINCRBY",
+            "weight": 20
+          },
+          {
+            "op": "ZRANK",
+            "weight": 20
+          },
+          {
+            "op": "ZSCORE",
+            "weight": 15
+          },
+          {
+            "count": 10,
+            "op": "ZRANGE",
+            "weight": 25
+          },
+          {
+            "op": "ZCARD",
+            "weight": 5
+          }
+        ],
+        "preset": "leaderboard",
+        "pubsub": {
+          "channels": 16,
+          "sharded": false,
+          "subscribers": 0
+        }
+      }
+    },
+    {
+      "concurrency": 64,
+      "dataset": {
+        "bitmap_bits": 10000,
+        "collection_size": 100,
+        "hash_fields": 8,
+        "hash_tag_groups": 0,
+        "key_count": 100,
+        "key_distribution": "uniform",
+        "key_prefix": "plgv:",
+        "preload": true,
+        "stream_length": 50,
+        "ttl": {
+          "fraction": 1,
+          "max_seconds": 3600,
+          "min_seconds": 60,
+          "mode": "none",
+          "seconds": 300
+        },
+        "value_size": 256,
+        "zipf_s": 0
+      },
+      "description": "Producers and consumers on a list and on a stream with a consumer group (read, then acknowledge).",
+      "name": "queue",
+      "title": "Work queue",
+      "workload": {
+        "allow_dangerous": false,
+        "mix": [
+          {
+            "op": "LPUSH",
+            "weight": 25
+          },
+          {
+            "op": "RPOP",
+            "weight": 20
+          },
+          {
+            "op": "LLEN",
+            "weight": 5
+          },
+          {
+            "op": "XADD",
+            "weight": 20
+          },
+          {
+            "op": "XCONSUME",
+            "weight": 20
+          },
+          {
+            "op": "XPENDING",
+            "weight": 5
+          },
+          {
+            "op": "XLEN",
+            "weight": 5
+          }
+        ],
+        "preset": "queue",
+        "pubsub": {
+          "channels": 16,
+          "sharded": false,
+          "subscribers": 0
+        }
+      }
+    },
+    {
+      "concurrency": 64,
+      "dataset": {
+        "bitmap_bits": 10000,
+        "collection_size": 100,
+        "hash_fields": 8,
+        "hash_tag_groups": 0,
+        "key_count": 10000,
+        "key_distribution": "zipf",
+        "key_prefix": "plgv:",
+        "preload": true,
+        "stream_length": 20,
+        "ttl": {
+          "fraction": 1,
+          "max_seconds": 3600,
+          "min_seconds": 60,
+          "mode": "none",
+          "seconds": 300
+        },
+        "value_size": 256,
+        "zipf_s": 1.1
+      },
+      "description": "Fixed-window limits: a Lua script (INCR, EXPIRE on first hit, compare), plus plain counters.",
+      "name": "rate-limiter",
+      "title": "Rate limiter",
+      "workload": {
+        "allow_dangerous": false,
+        "mix": [
+          {
+            "args": [
+              "60",
+              "1000"
+            ],
+            "op": "EVAL",
+            "script": "rate_limit",
+            "weight": 70
+          },
+          {
+            "op": "INCR",
+            "weight": 25
+          },
+          {
+            "op": "TTL",
+            "weight": 5
+          }
+        ],
+        "preset": "rate-limiter",
+        "pubsub": {
+          "channels": 16,
+          "sharded": false,
+          "subscribers": 0
+        }
+      }
+    },
+    {
+      "concurrency": 64,
+      "dataset": {
+        "bitmap_bits": 10000,
+        "collection_size": 100,
+        "hash_fields": 8,
+        "hash_tag_groups": 0,
+        "key_count": 100000,
+        "key_distribution": "uniform",
+        "key_prefix": "plgv:",
+        "preload": true,
+        "stream_length": 20,
+        "ttl": {
+          "fraction": 1,
+          "max_seconds": 3600,
+          "min_seconds": 60,
+          "mode": "none",
+          "seconds": 300
+        },
+        "value_size": 256,
+        "zipf_s": 0
+      },
+      "description": "Publishers send to 32 channels, 8 subscribers receive every message; reports delivery latency and loss.",
+      "name": "pubsub-fanout",
+      "title": "Pub/sub fan-out",
+      "workload": {
+        "allow_dangerous": false,
+        "mix": [
+          {
+            "op": "PUBLISH",
+            "weight": 95
+          },
+          {
+            "op": "GET",
+            "weight": 5
+          }
+        ],
+        "preset": "pubsub-fanout",
+        "pubsub": {
+          "channels": 32,
+          "sharded": false,
+          "subscribers": 8
+        }
+      }
+    },
+    {
+      "concurrency": 64,
+      "dataset": {
+        "bitmap_bits": 100000,
+        "collection_size": 50,
+        "hash_fields": 8,
+        "hash_tag_groups": 0,
+        "key_count": 10000,
+        "key_distribution": "uniform",
+        "key_prefix": "plgv:",
+        "preload": true,
+        "stream_length": 20,
+        "ttl": {
+          "fraction": 1,
+          "max_seconds": 3600,
+          "min_seconds": 60,
+          "mode": "none",
+          "seconds": 300
+        },
+        "value_size": 256,
+        "zipf_s": 0
+      },
+      "description": "Page-view analytics: counters, HyperLogLog unique counts and bitmap flags.",
+      "name": "counters",
+      "title": "Counters and analytics",
+      "workload": {
+        "allow_dangerous": false,
+        "mix": [
+          {
+            "op": "INCR",
+            "weight": 30
+          },
+          {
+            "op": "PFADD",
+            "weight": 25
+          },
+          {
+            "op": "PFCOUNT",
+            "weight": 10
+          },
+          {
+            "op": "SETBIT",
+            "weight": 20
+          },
+          {
+            "op": "GETBIT",
+            "weight": 10
+          },
+          {
+            "op": "BITCOUNT",
+            "weight": 5
+          }
+        ],
+        "preset": "counters",
+        "pubsub": {
+          "channels": 16,
+          "sharded": false,
+          "subscribers": 0
+        }
+      }
+    },
+    {
+      "concurrency": 16,
+      "dataset": {
+        "bitmap_bits": 10000,
+        "collection_size": 10000,
+        "hash_fields": 1000,
+        "hash_tag_groups": 0,
+        "key_count": 50,
+        "key_distribution": "uniform",
+        "key_prefix": "plgv:",
+        "preload": true,
+        "stream_length": 20,
+        "ttl": {
+          "fraction": 1,
+          "max_seconds": 3600,
+          "min_seconds": 60,
+          "mode": "none",
+          "seconds": 300
+        },
+        "value_size": 128,
+        "zipf_s": 0
+      },
+      "description": "Few, very large collections (10,000 elements): whole-collection reads and slices. Shows what big keys do to latency.",
+      "name": "big-keys",
+      "title": "Big keys stress",
+      "workload": {
+        "allow_dangerous": false,
+        "mix": [
+          {
+            "op": "HGETALL",
+            "weight": 20
+          },
+          {
+            "op": "SMEMBERS",
+            "weight": 15
+          },
+          {
+            "count": 1000,
+            "op": "LRANGE",
+            "weight": 20
+          },
+          {
+            "count": 1000,
+            "op": "ZRANGE",
+            "weight": 20
+          },
+          {
+            "op": "SADD",
+            "weight": 10
+          },
+          {
+            "op": "ZADD",
+            "weight": 10
+          },
+          {
+            "fields": 4,
+            "op": "HSET",
+            "weight": 5
+          }
+        ],
+        "preset": "big-keys",
+        "pubsub": {
+          "channels": 16,
+          "sharded": false,
+          "subscribers": 0
+        }
+      }
+    },
+    {
+      "concurrency": 64,
+      "dataset": {
+        "bitmap_bits": 10000,
+        "collection_size": 50,
+        "hash_fields": 8,
+        "hash_tag_groups": 16,
+        "key_count": 20000,
+        "key_distribution": "zipf",
+        "key_prefix": "plgv:",
+        "preload": true,
+        "stream_length": 20,
+        "ttl": {
+          "fraction": 1,
+          "max_seconds": 3600,
+          "min_seconds": 60,
+          "mode": "none",
+          "seconds": 300
+        },
+        "value_size": 256,
+        "zipf_s": 1.1
+      },
+      "description": "Every family at once: strings, hashes, lists, sets, sorted sets, streams, HyperLogLog, geo, bitmaps, scripts, transactions and pub/sub.",
+      "name": "mixed",
+      "title": "Mixed (kitchen sink)",
+      "workload": {
+        "allow_dangerous": false,
+        "mix": [
+          {
+            "op": "GET",
+            "weight": 25
+          },
+          {
+            "op": "SET",
+            "weight": 8
+          },
+          {
+            "fields": 4,
+            "op": "HSET",
+            "weight": 5
+          },
+          {
+            "op": "HGET",
+            "weight": 8
+          },
+          {
+            "op": "LPUSH",
+            "weight": 4
+          },
+          {
+            "op": "RPOP",
+            "weight": 4
+          },
+          {
+            "op": "SADD",
+            "weight": 4
+          },
+          {
+            "op": "SISMEMBER",
+            "weight": 5
+          },
+          {
+            "op": "ZADD",
+            "weight": 4
+          },
+          {
+            "count": 10,
+            "op": "ZRANGE",
+            "weight": 4
+          },
+          {
+            "op": "XADD",
+            "weight": 4
+          },
+          {
+            "op": "XCONSUME",
+            "weight": 3
+          },
+          {
+            "op": "PFADD",
+            "weight": 2
+          },
+          {
+            "op": "GEOADD",
+            "weight": 2
+          },
+          {
+            "op": "GEOSEARCH",
+            "weight": 2
+          },
+          {
+            "op": "SETBIT",
+            "weight": 2
+          },
+          {
+            "args": [
+              "60",
+              "100000"
+            ],
+            "op": "EVAL",
+            "script": "rate_limit",
+            "weight": 3
+          },
+          {
+            "op": "TXN",
+            "steps": [
+              {
+                "op": "GET",
+                "weight": 0
+              },
+              {
+                "op": "SET",
+                "weight": 0
+              }
+            ],
+            "weight": 3
+          },
+          {
+            "op": "WATCH_INCR",
+            "weight": 1
+          },
+          {
+            "op": "PUBLISH",
+            "weight": 3
+          }
+        ],
+        "preset": "mixed",
+        "pubsub": {
+          "channels": 16,
+          "sharded": false,
+          "subscribers": 2
+        }
+      }
+    }
+  ],
+  "version": "vtest"
+}

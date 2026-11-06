@@ -1,0 +1,12 @@
+# Ramp from 1 to 32 workers over 20s, then hold. Each second of the run shows the
+# active worker count. Run: ./bin/plgv run -config examples/ramp.yaml
+run:
+  duration: 30s
+  concurrency: 32
+  load_profile:
+    kind: ramp
+    start_workers: 1
+    end_workers: 32
+    ramp_over: 20s
+dataset:
+  key_count: 50000

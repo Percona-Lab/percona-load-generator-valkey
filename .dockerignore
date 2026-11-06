@@ -1,0 +1,7 @@
+.git
+bin/
+plgv-data/
+.test-certs/
+internal/webui/uitest/node_modules/
+images/
+*.test

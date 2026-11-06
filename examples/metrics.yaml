@@ -1,0 +1,19 @@
+# Paced run with server metrics, coordinated-omission latency and a JSON summary:
+#   ./bin/plgv run -config examples/metrics.yaml
+run:
+  duration: 30s
+  concurrency: 32
+  target_ops_per_sec: 50000
+  coordinated_omission: true
+target:
+  pool:
+    pipeline_depth: 4
+dataset:
+  key_count: 50000
+  key_distribution: zipf
+server_metrics:
+  enabled: true
+  interval: 1s
+output:
+  sample_interval: 1s
+  summary_file: run-summary.json

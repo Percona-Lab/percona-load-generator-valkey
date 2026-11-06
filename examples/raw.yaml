@@ -1,0 +1,12 @@
+# Your own commands. Placeholders: {key} {key:TYPE} {value} {n} {int:LO-HI} {now}.
+# FLUSHALL, DEBUG, SHUTDOWN etc. are refused unless workload.allow_dangerous: true.
+#   ./bin/plgv run -config examples/raw.yaml
+#   ./bin/plgv run -raw-file commands.txt        # one "weight command" per line
+run: {duration: 20s, concurrency: 16}
+dataset: {key_count: 5000, preload: true}
+workload:
+  mix:
+    - {op: RAW, weight: 6, command: "GET {key}"}
+    - {op: RAW, weight: 2, command: "SET {key} {value} EX 60"}
+    - {op: RAW, weight: 1, command: "HSET {key:hash} visits {n}"}
+    - {op: RAW, weight: 1, command: "ZADD {key:zset} {int:1-1000} member{n}"}

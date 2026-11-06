@@ -1,0 +1,12 @@
+# Big-keys preset, then look at what it left on the server: key types, sizes,
+# expiry and the biggest keys (read-only, runs after the measured part).
+#   ./bin/plgv run -config examples/keyspace.yaml
+workload:
+  preset: big-keys
+run:
+  duration: 20s
+keyspace_analysis:
+  enabled: true
+  samples: 5000      # keys to inspect
+  top: 10            # biggest keys to list
+  match: ""          # empty = the dataset's key prefix

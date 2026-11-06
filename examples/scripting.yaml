@@ -1,0 +1,11 @@
+# Lua scripts (built in or inline) and a function (FCALL).
+#   ./bin/plgv run -config examples/scripting.yaml
+run: {duration: 20s, concurrency: 16}
+dataset: {key_count: 5000, preload: true}
+workload:
+  mix:
+    - {op: EVAL, weight: 3, script: rate_limit, args: ["100", "1000"]}
+    - {op: EVALSHA, weight: 3, script: incr_cap, args: ["1000"]}
+    - {op: FCALL, weight: 2, script: get_set}
+    - {op: EVAL, weight: 2, source: "return redis.call('GET', KEYS[1])"}
+    - {op: GET, weight: 2}

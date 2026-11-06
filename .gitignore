@@ -1,0 +1,27 @@
+bin/
+*.test
+.DS_Store
+node_modules/
+run-summary.json
+plgv-data/
+.test-certs/
+
+# AI assistant files and folders (never commit)
+.claude/
+CLAUDE.md
+CLAUDE.local.md
+AGENTS.md
+.cursor/
+.cursorrules
+.aider*
+.codex/
+.gemini/
+.windsurf/
+.copilot/
+.github/copilot-instructions.md
+.mcp.json
+
+# Internal planning and status notes (kept local)
+PLAN.md
+PROJECT_STATUS.md
+PROJECT_HISTORY_ARCHIVE.md

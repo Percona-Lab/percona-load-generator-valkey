@@ -1,0 +1,70 @@
+{
+  "active_workers": 0,
+  "duration_seconds": 10,
+  "elapsed_seconds": 3,
+  "errors": 0,
+  "label": "cache baseline",
+  "misses": 12,
+  "ops": 150000,
+  "per_op": [
+    {
+      "errors": 0,
+      "misses": 12,
+      "op": "GET",
+      "ops": 120000,
+      "p99_ms": 1.9
+    },
+    {
+      "errors": 0,
+      "misses": 0,
+      "op": "SET",
+      "ops": 30000,
+      "p99_ms": 1.9
+    }
+  ],
+  "series": [
+    {
+      "errors": 0,
+      "max_ms": 3,
+      "offset_s": 1,
+      "ops_per_sec": 50000,
+      "p50_ms": 0.3,
+      "p95_ms": 1.2,
+      "p99_ms": 1.8,
+      "workers": 0
+    },
+    {
+      "errors": 0,
+      "max_ms": 4,
+      "offset_s": 2,
+      "ops_per_sec": 51000,
+      "p50_ms": 0.3,
+      "p95_ms": 1.3,
+      "p99_ms": 1.9,
+      "workers": 0
+    }
+  ],
+  "server": {
+    "mode": "",
+    "poll_errors": 0,
+    "samples": [
+      {
+        "blocked_clients": 0,
+        "connected_clients": 17,
+        "fragmentation_ratio": 0,
+        "hit_ratio": 0.97,
+        "net_in_kbps": 0,
+        "net_out_kbps": 0,
+        "offset_s": 1,
+        "ops_per_sec": 50000,
+        "used_memory": 52428800
+      }
+    ],
+    "slowlog": [],
+    "slowlog_new": 0,
+    "version": "9.1.3"
+  },
+  "server_metrics": true,
+  "started_at": "2026-11-04T10:00:00Z",
+  "state": "running"
+}

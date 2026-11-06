@@ -1,0 +1,4 @@
+user default off
+user bench on >benchpass ~plgv* ~it:* &* -@all +@read +@write +@keyspace +@string +@hash +@list +@set +@sortedset +@stream +@geo +@hyperloglog +@bitmap +@pubsub +@transaction +@connection +eval +evalsha +eval_ro +evalsha_ro +fcall +fcall_ro +script|load +function|load +function|list +info +slowlog|get +latency|latest +memory|usage +dbsize +scan +type +client|id +client|setinfo +cluster|shards +cluster|nodes +cluster|info -flushall -flushdb
+user reader on >readerpass ~* &* -@all +@read +info +scan +dbsize +type +client|setinfo +client|id +ping +hello
+user admin on >adminpass ~* &* +@all

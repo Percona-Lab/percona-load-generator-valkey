@@ -1,0 +1,13 @@
+# Streams: producers append, a consumer group reads and acknowledges, plus length and range reads.
+#   ./bin/plgv run -config examples/streams.yaml
+run: {duration: 20s, concurrency: 16}
+dataset: {key_count: 1000, stream_length: 50, preload: true}
+workload:
+  mix:
+    - {op: XADD, weight: 4}
+    - {op: XLEN, weight: 1}
+    - {op: XRANGE, weight: 2, count: 10}
+    - {op: XREAD, weight: 2, count: 10}
+    - {op: XCONSUME, weight: 3}      # XREADGROUP then XACK
+    - {op: XPENDING, weight: 1}
+    - {op: XTRIM, weight: 1}

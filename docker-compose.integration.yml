@@ -1,0 +1,4 @@
+# Integration test services. Same setup as docker-compose.yml, kept as a separate
+# entry point for CI. The TLS + ACL variant is the `tls` profile of docker-compose.yml (make valkey-tls-up).
+include:
+  - docker-compose.yml

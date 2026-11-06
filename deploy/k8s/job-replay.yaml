@@ -1,0 +1,46 @@
+# Replay a recording kept in a PersistentVolumeClaim on a target (not part of the kustomization:
+# apply it when you have a recording). Reads-only here, so it cannot change the data.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: plgv-replay
+  namespace: plgv
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: plgv
+          image: plgv:latest
+          args: ["replay", "-addr", "valkey.example.svc:6379", "-tls-ca", "/tls/ca.crt", "-speed", "0", "-reads-only", "-summary", "/tmp/replay.json", "/recordings/run.jsonl.zst"]
+          env:
+            - {name: PLGV_USERNAME_FILE, value: /secrets/username}
+            - {name: PLGV_PASSWORD_FILE, value: /secrets/password}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - {name: recordings, mountPath: /recordings, readOnly: true}
+            - {name: credentials, mountPath: /secrets, readOnly: true}
+            - {name: tls, mountPath: /tls, readOnly: true}
+            - {name: tmp, mountPath: /tmp}
+      volumes:
+        - name: recordings
+          persistentVolumeClaim: {claimName: plgv-recordings, readOnly: true}
+        - name: credentials
+          secret: {secretName: plgv-credentials}
+        - name: tls
+          secret: {secretName: plgv-tls, optional: true}
+        - name: tmp
+          emptyDir: {}

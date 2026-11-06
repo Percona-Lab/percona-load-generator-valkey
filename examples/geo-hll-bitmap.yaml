@@ -1,0 +1,15 @@
+# Geo, HyperLogLog and bitmaps.
+#   ./bin/plgv run -config examples/geo-hll-bitmap.yaml
+run: {duration: 20s, concurrency: 16}
+dataset: {key_count: 2000, collection_size: 100, bitmap_bits: 100000, preload: true}
+workload:
+  mix:
+    - {op: GEOADD, weight: 2}
+    - {op: GEOPOS, weight: 2}
+    - {op: GEODIST, weight: 2}
+    - {op: GEOSEARCH, weight: 3}
+    - {op: PFADD, weight: 4}
+    - {op: PFCOUNT, weight: 3}
+    - {op: SETBIT, weight: 3}
+    - {op: GETBIT, weight: 3}
+    - {op: BITCOUNT, weight: 1}

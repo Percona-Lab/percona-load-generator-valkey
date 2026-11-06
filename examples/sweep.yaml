@@ -1,0 +1,10 @@
+# Run the same workload at 4, 8, 16 and 32 workers, one run each (10s per run).
+# Run: ./bin/plgv run -config examples/sweep.yaml
+run:
+  duration: 10s
+  sweep:
+    kind: workers
+    values: [4, 8, 16, 32]
+    pause: 2s
+dataset:
+  key_count: 50000

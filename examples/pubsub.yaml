@@ -1,0 +1,8 @@
+# Publishers plus subscribers; plgv reports delivery latency and any lost messages.
+#   ./bin/plgv run -config examples/pubsub.yaml
+run: {duration: 20s, concurrency: 8}
+workload:
+  pubsub: {subscribers: 4, channels: 16, sharded: false}
+  mix:
+    - {op: PUBLISH, weight: 10}
+    - {op: GET, weight: 1}
