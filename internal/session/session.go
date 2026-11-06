@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -192,6 +193,11 @@ func Run(ctx context.Context, cfg config.Config, opt Options, h Hooks) (*Outcome
 	sum, found := runsummary.BuildWith(opt.Version, cfg, res, srv, ks, startedAt)
 	sum.Label = opt.Label
 	sum.Stopped = ctx.Err() != nil
+	if recRes != nil {
+		sum.Recording = &runsummary.RecordingOut{Path: recRes.Path, Name: filepath.Base(recRes.Path), Status: recRes.Status, Reason: recRes.Reason,
+			Ops: recRes.Ops, Bytes: recRes.Bytes, FileBytes: recRes.FileBytes, Compression: recRes.Compression, Backpressure: recRes.Backpressure,
+			Waits: recRes.Waits, WaitTotalMs: float64(recRes.WaitTotal) / float64(time.Millisecond), WaitMaxMs: float64(recRes.WaitMax) / float64(time.Millisecond), Outcomes: recRes.Outcomes, Checksums: recRes.Checksums}
+	}
 	return &Outcome{Result: res, Server: srv, Summary: sum, Findings: found, StartedAt: startedAt, Recording: recRes}, nil
 }
 

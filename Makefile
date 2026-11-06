@@ -145,6 +145,16 @@ valkey-cluster-down:
 valkey-sentinel-up:
 	$(COMPOSE) --profile sentinel up -d --wait sentinel-primary
 	$(COMPOSE) --profile sentinel up -d sentinel-replica sentinel-1 sentinel-2 sentinel-3
+	@# Wait until every sentinel knows the master and has seen the replica and the other sentinels.
+	@for i in $$(seq 1 60); do \
+	  ok=0; \
+	  for p in 26379 26380 26381; do \
+	    m=$$(docker exec plgv-sentinel-primary valkey-cli -p $$p sentinel master mymaster 2>/dev/null); \
+	    echo "$$m" | grep -qx 'num-slaves' && echo "$$m" | grep -A1 -x 'num-slaves' | tail -1 | grep -qx 1 && \
+	      echo "$$m" | grep -A1 -x 'num-other-sentinels' | tail -1 | grep -qx 2 && ok=$$((ok+1)); \
+	  done; \
+	  [ $$ok -eq 3 ] && break; sleep 1; \
+	done; [ $$ok -eq 3 ] || { echo "sentinel did not become ready"; exit 1; }
 	@echo "Valkey sentinel: primary 127.0.0.1:6380, replica 6381, sentinels 26379-26381 (master set mymaster)"
 
 valkey-sentinel-down:

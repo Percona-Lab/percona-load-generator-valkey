@@ -1,0 +1,33 @@
+{
+  "replays": [
+    {
+      "finished_at": "2026-11-04T11:00:00Z",
+      "id": "20261104-110000",
+      "label": "upgrade test",
+      "mode": "sequential",
+      "reads_only": false,
+      "recording": "session.jsonl.zst",
+      "speed": 0,
+      "targets": [
+        {
+          "errors": 0,
+          "hash_matches": true,
+          "name": "valkey 8.0",
+          "ops": 60000,
+          "ops_per_sec": 50000,
+          "p99_ms": 0.31,
+          "target": "10.0.0.5:6379"
+        },
+        {
+          "errors": 3,
+          "hash_matches": true,
+          "name": "valkey 9.1",
+          "ops": 60000,
+          "ops_per_sec": 36000,
+          "p99_ms": 0.92,
+          "target": "10.0.0.5:6379"
+        }
+      ]
+    }
+  ]
+}

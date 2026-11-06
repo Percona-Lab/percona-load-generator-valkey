@@ -10,6 +10,7 @@ import (
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/datafp"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/multitarget"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/replay"
+	"github.com/Percona-Lab/percona-load-generator-valkey/internal/stats"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/valkey"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/workloadrec"
 )
@@ -82,29 +83,60 @@ type TargetReplay struct {
 	Err     error
 }
 
+// ReplayHooks let a caller follow a multi-target replay. Every field is optional.
+// OnSample can be called from several goroutines when the targets run at once.
+type ReplayHooks struct {
+	OnTarget func(index, total int, name string) // a target is about to start
+	OnSample func(name string, s stats.Sample)   // about once a second per running target
+	OnDone   func(name string, r TargetReplay)   // a target finished (or failed)
+}
+
 // ReplayMany replays the recording on every target, one after another or all
 // at once. A target that fails does not stop the others.
 func ReplayMany(ctx context.Context, cfg config.Config, targets []multitarget.Target, path string, opt replay.Options, concurrent, requireData bool, version string) []TargetReplay {
+	return ReplayManyWith(ctx, cfg, targets, path, opt, concurrent, requireData, version, ReplayHooks{})
+}
+
+// ReplayManyWith is ReplayMany with hooks that report progress.
+func ReplayManyWith(ctx context.Context, cfg config.Config, targets []multitarget.Target, path string, opt replay.Options, concurrent, requireData bool, version string, h ReplayHooks) []TargetReplay {
 	info, scanErr := workloadrec.Scan(path)
-	outs := multitarget.Run(ctx, targets, concurrent, func(ctx context.Context, t multitarget.Target) (*ReplayOutcome, error) {
-		c := cfg
-		c.Target.URIs = splitList(t.Addr)
-		return Replay(ctx, c, path, opt, requireData)
-	})
-	res := make([]TargetReplay, len(outs))
-	for i, o := range outs {
-		tr := TargetReplay{Target: o.Target, Outcome: o.Value, Err: o.Err}
+	index := map[string]int{}
+	for i, t := range targets {
+		index[t.Name] = i
+	}
+	build := func(t multitarget.Target, v *ReplayOutcome, err error) TargetReplay {
+		tr := TargetReplay{Target: t, Outcome: v, Err: err}
 		switch {
-		case o.Err == nil && o.Value != nil && o.Value.Result != nil:
-			tr.Summary = replay.Summarize(o.Value.Result, o.Target.Name, o.Target.Addr, version, o.Value.ServerVersion, o.Value.Mode, o.Value.Data)
+		case err == nil && v != nil && v.Result != nil:
+			tr.Summary = replay.Summarize(v.Result, t.Name, t.Addr, version, v.ServerVersion, v.Mode, v.Data)
 		default:
-			s := &replay.Summary{Format: replay.SummaryFormat, Label: o.Target.Name, Target: o.Target.Addr, PLGVVersion: version, Failure: errText(o.Err)}
+			s := &replay.Summary{Format: replay.SummaryFormat, Label: t.Name, Target: t.Addr, PLGVVersion: version, Failure: errText(err)}
 			if scanErr == nil {
 				s.Recording = replay.RecordingRef{Name: filepath.Base(path), Status: info.Status, Ops: info.Ops, Workers: info.Header.Workers, CommandsHash: info.CommandsHash}
 			}
 			tr.Summary = s
 		}
-		res[i] = tr
+		return tr
+	}
+	outs := multitarget.Run(ctx, targets, concurrent, func(ctx context.Context, t multitarget.Target) (*ReplayOutcome, error) {
+		c := cfg
+		c.Target.URIs = splitList(t.Addr)
+		o := opt
+		if h.OnSample != nil {
+			o.OnSample = func(s stats.Sample) { h.OnSample(t.Name, s) }
+		}
+		if h.OnTarget != nil {
+			h.OnTarget(index[t.Name]+1, len(targets), t.Name)
+		}
+		v, err := Replay(ctx, c, path, o, requireData)
+		if h.OnDone != nil {
+			h.OnDone(t.Name, build(t, v, err))
+		}
+		return v, err
+	})
+	res := make([]TargetReplay, len(outs))
+	for i, o := range outs {
+		res[i] = build(o.Target, o.Value, o.Err)
 	}
 	return res
 }

@@ -48,6 +48,9 @@ type Options struct {
 	// Checksums says the client digests replies (valkey.Options.CaptureReplies),
 	// so recorded checksums can be compared.
 	Checksums bool
+	// OnSample, when set, is called about once a second with the slice just
+	// finished, so a caller can show progress. It must not block.
+	OnSample func(stats.Sample)
 }
 
 // Diff is one command whose outcome differed from the recording. It holds the
@@ -193,7 +196,10 @@ func Run(ctx context.Context, c valkey.Client, path string, opt Options) (*Resul
 			case <-stopSamp:
 				return
 			case now := <-t.C:
-				col.Snapshot(now)
+				sm := col.Snapshot(now)
+				if opt.OnSample != nil {
+					opt.OnSample(sm)
+				}
 			}
 		}
 	}()

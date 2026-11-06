@@ -177,3 +177,15 @@ func parseAs(r io.Reader, format string) ([]Entry, string, int, error) {
 	}
 	return nil, format, 0, fmt.Errorf("unknown format %q (want monitor or slowlog)", format)
 }
+
+// Parse reads captured traffic from r in the given format ("auto" detects it
+// from the first bytes). It returns the entries, the format used and the
+// number of lines that were not commands.
+func Parse(r io.Reader, format string) ([]Entry, string, int, error) {
+	if format == "" || format == "auto" {
+		br := bufio.NewReader(r)
+		head, _ := br.Peek(512)
+		return parseAs(br, Detect(head))
+	}
+	return parseAs(r, format)
+}

@@ -45,6 +45,27 @@ type Summary struct {
 	// Traffic is the traffic fingerprint of a deterministic run.
 	Traffic  *TrafficInfo `json:"traffic,omitempty"`
 	Findings []Finding    `json:"findings"`
+	// Recording describes the recording this run wrote (record.path). It never
+	// holds a command.
+	Recording *RecordingOut `json:"recording,omitempty"`
+}
+
+// RecordingOut is the result of recording a run.
+type RecordingOut struct {
+	Path         string  `json:"path"`
+	Name         string  `json:"name"`
+	Status       string  `json:"status"` // complete, truncated or failed
+	Reason       string  `json:"reason,omitempty"`
+	Ops          uint64  `json:"ops"`
+	Bytes        int64   `json:"bytes"`      // uncompressed
+	FileBytes    int64   `json:"file_bytes"` // on disk
+	Compression  string  `json:"compression"`
+	Backpressure string  `json:"backpressure"`
+	Waits        uint64  `json:"waits,omitempty"` // times a worker waited for the writer (block)
+	WaitTotalMs  float64 `json:"wait_total_ms,omitempty"`
+	WaitMaxMs    float64 `json:"wait_max_ms,omitempty"`
+	Outcomes     bool    `json:"outcomes,omitempty"`
+	Checksums    bool    `json:"checksums,omitempty"`
 }
 
 // SweepInfo ties a run to the sweep it belongs to.

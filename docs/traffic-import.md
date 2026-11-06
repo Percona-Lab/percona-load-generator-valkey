@@ -65,3 +65,10 @@ The command prints how many entries were converted and how many were skipped, by
 plgv replay -addr staging:6379 -reads-only prod.jsonl.zst      # safe: skips writes
 plgv replay -targets v8=a:6379,v9=b:6379 -speed 1 prod.jsonl.zst   # compare two versions at the recorded pace
 ```
+
+## In the web UI
+
+In **Replay a recorded workload**, turn on **Advanced** and open **Data and commands > Import captured traffic**: paste
+the capture, choose a file, or (when typed paths are on) name a file on the server, then **Convert to a recording**.
+The result is a recording in the recordings folder, chosen for the replay. Live capture is command-line only because
+`MONITOR` can slow the server. See [record-and-replay-web-ui.md](record-and-replay-web-ui.md#import-captured-traffic).

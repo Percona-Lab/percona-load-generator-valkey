@@ -49,7 +49,8 @@ Find the message, then the cause. Messages are quoted from plgv.
 | `403 this server answers requests addressed to localhost...` | You opened it by another host name. Use `localhost` or `127.0.0.1`, or start it with `-allowed-host`. |
 | `plgv web: ... is not a loopback address` | Pass `-allow-remote` (and read `security-tls-acl.md`). |
 | `cross-site request refused` | A request came from another origin. |
-| `record: recording writes a file, so it is available from the command line only` | Use `plgv run -record`. |
+| `record.path: tick Record this run to write a recording` | Use the *Record a workload* card, or tick the Record switch. See `record-and-replay-web-ui.md`. |
+| `typing a recording path is off because plgv web accepts remote connections` | Typed paths work only on a loopback address. Pick a recording from the list or upload one. |
 | Settings page shows no TLS fields | They are an Advanced setting: tick Advanced in Settings level, then open the *Connection* category. |
 
 ## Still stuck

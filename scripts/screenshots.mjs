@@ -149,6 +149,43 @@ try {
       await p.goto(`${WEBPORT}/#tab=trends`); if (want('trends')) await p.shot('trends');
     });
   }
+
+  // ---------- record and replay ----------
+  if (['record_settings', 'recorded_run', 'replay_settings', 'replay_import', 'replay_live', 'replay_result', 'replay_stored'].some(want)) {
+    await browser(1280, 900, async p => {
+      await p.goto(WEBPORT + '/');
+      await p.js(task('record'));
+      if (want('record_settings')) await p.shot('record_settings', '#taskView');
+    });
+    // Record a real run through the API, the way the page does it.
+    const cfg = await runConfig(async d => { await usePreset(d, 'cache'); d.dataset.key_count = 20000; d.run.duration = '6s'; d.run.concurrency = 16; d.record.compression = 'zstd'; d.record.outcomes = true; d.record.backpressure = 'block'; });
+    const started = await fetch(WEBPORT + '/api/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config: cfg, label: 'cache to record', record: true }) });
+    if (started.status !== 202) throw new Error('record: ' + await started.text());
+    let recorded;
+    for (;;) { await sleep(500); const l = await get('/api/live'); if (l.state === 'error') throw new Error('record failed: ' + l.error); if (l.state === 'done') { recorded = l.run_id; break; } }
+    await browser(1280, 900, async p => {
+      await p.goto(`${WEBPORT}/#run=${recorded}&tab=live`);
+      if (want('recorded_run')) await p.shot('recorded_run', '#viewBanner');
+      await p.goto(`${WEBPORT}/#task=replay`);
+      if (want('replay_settings')) await p.shot('replay_settings', '#taskView');
+      await p.js(`document.getElementById('lvlAdvanced').click(); document.querySelector('[data-cat-btn="data"]').click()`);
+      await p.js(`(() => { const t = document.getElementById('impText'); t.value = '1700000000.000001 [0 10.0.0.1:51000] "SET" "session:1" "abc"\\n1700000000.000900 [0 10.0.0.1:51000] "GET" "session:1"\\n1700000000.001200 [0 10.0.0.2:51001] "HGETALL" "user:7"'; })()`);
+      if (want('replay_import')) await p.shot('replay_import', '#importCard');
+      // Two servers (the same one twice, so the example needs only one Valkey), one after the other, reads only.
+      await p.js(`document.querySelector('[data-cat-btn="execution"]').click()`);
+      await p.js(`(() => { const t = document.getElementById('f-rptargets'); t.value = 'before=127.0.0.1:6379\\nafter=127.0.0.1:6379'; t.dispatchEvent(new Event('input', { bubbles: true })); const r = document.getElementById('f-rpreads'); r.click(); })()`);
+      await p.js(`document.getElementById('startBtn').click()`);
+      await sleep(3500);
+      if (want('replay_live')) await p.shot('replay_live', '#panel-live');
+      for (let i = 0; i < 60; i++) { const l = await get('/api/live'); if (l.state === 'done' || l.state === 'error') break; await sleep(500); }
+      await sleep(1500);
+      if (want('replay_result')) await p.shot('replay_result', '#panel-live');
+    });
+    await browser(1280, 900, async p => {
+      await p.goto(`${WEBPORT}/#tab=replay`);
+      if (want('replay_stored')) await p.shot('replay_stored', '#panel-replay');
+    });
+  }
 } finally {
   web.kill();
   rmSync(data, { recursive: true, force: true });

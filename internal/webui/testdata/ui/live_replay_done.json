@@ -1,0 +1,74 @@
+{
+  "active_workers": 0,
+  "duration_seconds": 0,
+  "elapsed_seconds": 4,
+  "errors": 0,
+  "kind": "replay",
+  "misses": 0,
+  "ops": 0,
+  "per_op": [],
+  "replay": {
+    "concurrent": false,
+    "iterations": 1,
+    "reads_only": false,
+    "recorded_ops": 60000,
+    "recording": "rec-20261104T100000Z-a1b2c3.plgvrec",
+    "speed": 0,
+    "targets": [
+      {
+        "addr": "10.0.0.5:6379",
+        "elapsed_seconds": 1.2,
+        "errors": 0,
+        "name": "valkey 8.0",
+        "ops": 60000,
+        "series": [
+          {
+            "errors": 0,
+            "max_ms": 2,
+            "offset_s": 1,
+            "ops_per_sec": 50000,
+            "p50_ms": 0.2,
+            "p95_ms": 0.4,
+            "p99_ms": 0.8,
+            "workers": 0
+          }
+        ],
+        "state": "done"
+      },
+      {
+        "addr": "10.0.0.6:6379",
+        "elapsed_seconds": 0.6,
+        "errors": 0,
+        "name": "valkey 9.1",
+        "ops": 21000,
+        "series": [
+          {
+            "errors": 0,
+            "max_ms": 2,
+            "offset_s": 1,
+            "ops_per_sec": 36000,
+            "p50_ms": 0.3,
+            "p95_ms": 0.5,
+            "p99_ms": 0.9,
+            "workers": 0
+          }
+        ],
+        "state": "running"
+      },
+      {
+        "addr": "10.0.0.7:6379",
+        "elapsed_seconds": 0,
+        "errors": 0,
+        "name": "valkey 9.2",
+        "ops": 0,
+        "series": [],
+        "state": "waiting"
+      }
+    ]
+  },
+  "replay_id": "20261104-110000",
+  "series": [],
+  "server_metrics": false,
+  "started_at": "2026-11-04T10:00:00Z",
+  "state": "done"
+}

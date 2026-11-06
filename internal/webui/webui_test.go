@@ -21,6 +21,7 @@ import (
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/session"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/stats"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/valkey"
+	"github.com/Percona-Lab/percona-load-generator-valkey/internal/workloadrec"
 )
 
 // fakeRun stands in for session.Run: it reports phases and two samples, waits
@@ -81,7 +82,19 @@ func (f *fakeRun) run(ctx context.Context, cfg config.Config, opt session.Option
 	sum, found := runsummary.Build("test", cfg, res, srv, started)
 	sum.Label = opt.Label
 	sum.Stopped = ctx.Err() != nil
-	return &session.Outcome{Result: res, Server: srv, Summary: sum, Findings: found, StartedAt: started}, nil
+	out := &session.Outcome{Result: res, Server: srv, Summary: sum, Findings: found, StartedAt: started}
+	if cfg.Record.Path != "" { // a real (tiny) recording, so listing and replaying can be tested
+		rec, err := workloadrec.NewRecorder(cfg.Record.Path, workloadrec.Options{Compression: cfg.Record.Compression}, workloadrec.Header{PLGVVersion: "test", Workers: 2})
+		if err != nil {
+			return nil, err
+		}
+		rec.Record(workloadrec.Entry{Worker: 0, Group: 1, Cmd: []string{"SET", "k", "v"}})
+		r := rec.Close()
+		out.Recording = &r
+		sum.Recording = &runsummary.RecordingOut{Path: r.Path, Name: filepath.Base(r.Path), Status: r.Status, Ops: r.Ops, Bytes: r.Bytes, FileBytes: r.FileBytes,
+			Compression: r.Compression, Backpressure: r.Backpressure, Outcomes: r.Outcomes}
+	}
+	return out, nil
 }
 
 type env struct {
@@ -91,10 +104,17 @@ type env struct {
 	f   *fakeRun
 }
 
-func setup(t *testing.T, creds map[string]string) *env {
+func setup(t *testing.T, creds map[string]string) *env { return setupWith(t, creds, nil) }
+
+// setupWith is setup with a chance to change the server options (free paths, a fake replay).
+func setupWith(t *testing.T, creds map[string]string, edit func(*Options)) *env {
 	t.Helper()
 	f := newFake()
-	s, err := New(Options{DataDir: t.TempDir(), Version: "vtest", Run: f.run, Env: func(k string) string { return creds[k] }, KeepRuns: 0})
+	opt := Options{DataDir: t.TempDir(), Version: "vtest", Run: f.run, Env: func(k string) string { return creds[k] }, KeepRuns: 0}
+	if edit != nil {
+		edit(&opt)
+	}
+	s, err := New(opt)
 	if err != nil {
 		t.Fatal(err)
 	}

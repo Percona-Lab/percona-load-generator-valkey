@@ -35,8 +35,9 @@ plgv compare -fail-on-regression v8.json v9.json   # exit 1 if slower, mixed or 
 
 ## Compare in the web UI
 
-Open the **Replay Comparison** tab, choose the summary files and read the result. The files are read
-in your browser and sent to the server of that page only to be compared; nothing is stored and no file
+Open the **Replay Comparison** tab. It lists the replays you ran from the page ([record-and-replay-web-ui.md](record-and-replay-web-ui.md)):
+tick two or more and press **Compare selected**. You can also choose summary files written by `plgv replay -summary`:
+they are read in your browser and sent to the server of that page only to be compared; nothing is stored and no file
 on the server is read. Change *Unchanged within* to rerun the comparison with another tolerance.
 `#replay=<base64url of a JSON array of summaries>` opens the tab with that comparison (used for the screenshot above).
 

@@ -185,6 +185,9 @@ func TestUIFixturesMatchAPI(t *testing.T) {
 		PerOp:  []LiveOp{{Op: "GET", Ops: 72000, P99Ms: 1.2}, {Op: "SET", Ops: 18000, P99Ms: 1.2}},
 		Sweep:  &LiveSweep{ID: "swtest", Kind: "workers", Index: 2, Total: 4, Value: 8, RunIDs: []string{"20261104-120000"}}})
 
+	for k, v := range replayFixtures(t, base) {
+		got[k] = v
+	}
 	for name, b := range got {
 		p := filepath.Join(dir, name)
 		if *updateUI {

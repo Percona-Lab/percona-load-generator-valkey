@@ -8,9 +8,10 @@ the same order and, if you want, at the same pace. Use it to:
 - check whether a change made a command return something different (reply checksums);
 - repeat a workload several times to see cold and warm behavior.
 
-Both features are **off by default** and are command-line features: the web UI refuses
-`record` settings, because a web request must not choose a file for the server to write.
-(Replay results are compared in the **Replay Comparison** tab or with `plgv compare`: see `replay-comparison.md`.)
+Both features are **off by default**. This page is about the command line; the web UI does the same with
+**Record a workload** and **Replay a recorded workload** ([record-and-replay-web-ui.md](record-and-replay-web-ui.md)),
+and writes the same files. Replay results are compared in the **Replay Comparison** tab or with `plgv compare`:
+see [replay-comparison.md](replay-comparison.md).
 
 ## Record a run
 

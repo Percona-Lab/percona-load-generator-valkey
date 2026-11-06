@@ -274,6 +274,27 @@ nav.tabs { background:var(--surface); border:1px solid var(--border); border-rad
     <p class="settings-note" id="serverNote">One address for a standalone server, as <code>valkey://host:port</code> or <code>host:port</code>. For a <strong>cluster</strong> list one or more nodes (comma separated): plgv finds the rest, routes every command by its key's slot, and splits the results per node. For <strong>sentinel</strong> list the sentinels and give the master name; plgv follows the master through failovers. Multi-key commands in a cluster need <em>hash tag groups</em> (Advanced, Dataset details). Credentials are not entered here: set <code>PLGV_USERNAME</code> and <code>PLGV_PASSWORD</code> in the environment before starting <code>plgv web</code>.</p>
   </div>
 
+  <!-- Record: only for the "Record a workload" task -->
+  <div class="card" data-level="basic" data-cat="basic" data-group="record" data-only="record" id="recordCard">
+    <h3>Record <span class="level-tag">Basic</span></h3>
+    <div class="note-box" id="recNote" data-testid="record-note"><strong>Record this run</strong>: every command the workers send is written to a file on the machine running plgv web, so you can replay the same commands on another server. The file holds real keys and values: treat it like production data. Recording adds a little work per command; each recording gets a new file, so an earlier one is never replaced.</div>
+    <div class="grid" style="margin-top:12px">
+      <div class="form-group"><label for="f-rcomp">Compression</label>
+        <select id="f-rcomp" data-path="record.compression"><option value="zstd">zstd (small, fast)</option><option value="gzip">gzip</option><option value="none">none (plain text)</option></select></div>
+      <div class="form-group"><label for="f-rbp">When the writer falls behind</label>
+        <select id="f-rbp" data-path="record.backpressure"><option value="fail">stop recording, keep running</option><option value="block">slow the workers so nothing is lost</option></select></div>
+      <div class="form-group"><label for="f-rmax">Max size (MB, 0 = no limit)</label><input type="number" id="f-rmax" class="f-sm" data-path="record.max_mb" min="0"></div>
+    </div>
+    <div class="grid" style="margin-top:8px">
+      <div class="field-check"><input type="checkbox" id="f-rout" data-path="record.outcomes"><label for="f-rout">Record outcomes (status and time of every command)</label></div>
+      <div class="field-check"><input type="checkbox" id="f-rsum" data-path="record.checksums"><label for="f-rsum">Also checksum every reply</label></div>
+      <div class="field-check"><input type="checkbox" id="f-rfp" data-path="record.data_fingerprint"><label for="f-rfp">Remember the starting data</label></div>
+    </div>
+    <div class="form-group" style="margin-top:12px"><label for="f-rpath">Recording file (on the server running plgv web)</label>
+      <input type="text" id="f-rpath" style="width:100%" data-path="record.path" placeholder="leave blank: a new file in the recordings folder" autocomplete="off"></div>
+    <p class="settings-note" id="recFolder"></p>
+  </div>
+
   <div class="card" data-level="basic" data-cat="basic" data-group="run">
     <h3>Run <span class="level-tag">Basic</span></h3>
     <div class="grid">
@@ -333,6 +354,69 @@ nav.tabs { background:var(--surface); border:1px solid var(--border); border-rad
       <button class="btn btn-small" id="savedSave" type="button">Save current</button>
       <span id="savedMsg" class="settings-note" role="status"></span>
     </div>
+  </div>
+
+  <!-- Replay: only for the "Replay a recorded workload" task -->
+  <div class="card" data-level="basic" data-cat="basic" data-group="recording" data-only="replay" id="recordingCard">
+    <h3>Recording to replay <span class="level-tag">Basic</span></h3>
+    <div class="form-group"><label for="rpList">Recordings on the server running plgv web (newest first)</label>
+      <select id="rpList" size="6" style="width:100%" aria-label="Recordings"></select></div>
+    <div class="toolbar" style="margin-top:8px">
+      <button class="btn btn-small" id="rpRefresh" type="button">Refresh</button>
+      <button class="btn btn-small" id="rpInfoBtn" type="button">Details</button>
+      <button class="btn btn-small" id="rpDelete" type="button">Delete</button>
+      <span class="settings-note" id="rpListMsg" role="status"></span>
+    </div>
+    <div id="rpInfo" hidden></div>
+    <details id="rpMore" style="margin-top:12px"><summary>Enter a server path or upload a file</summary>
+      <div class="form-group" id="rpFreeRow" style="margin-top:8px"><label for="rpPath">Path of a recording on the server running plgv web</label>
+        <input type="text" id="rpPath" style="width:100%" data-path="replay.path" placeholder="/path/to/recording.plgvrec.zst" autocomplete="off"></div>
+      <div class="form-group" style="margin-top:8px"><label for="rpUpload">Upload a recording from this computer</label><input type="file" id="rpUpload"></div>
+      <p class="settings-note" id="rpPathNote"></p>
+    </details>
+  </div>
+
+  <div class="card" data-level="basic" data-cat="basic" data-group="replayopts" data-only="replay" id="replayOptsCard">
+    <h3>Replay options <span class="level-tag">Basic</span></h3>
+    <div class="grid">
+      <div class="form-group"><label for="f-rpspeed">Speed</label>
+        <select id="f-rpspeed" data-path="replay.speed" data-kind="num"><option value="1">at the recorded pace</option><option value="2">2 times faster</option><option value="5">5 times faster</option><option value="10">10 times faster</option><option value="0">as fast as the server answers</option></select></div>
+      <div class="form-group"><label for="f-rpiter">Iterations</label><input type="number" id="f-rpiter" class="f-xs" data-path="replay.iterations" min="1" max="1000"></div>
+      <div class="form-group"><label for="f-rpdelay">Wait between iterations</label><input type="text" id="f-rpdelay" class="f-sm" data-path="replay.iteration_delay" placeholder="0s"></div>
+      <div class="field-check"><input type="checkbox" id="f-rpreads" data-path="replay.reads_only"><label for="f-rpreads">Reads only (leave the data unchanged)</label></div>
+    </div>
+    <div class="note-box" id="rpNote" data-testid="replay-note"><strong>Replay</strong>: the recorded commands are sent again, in the recorded order, to the server in <em>Server</em> above. A replay that sends writes changes that server's data, so point it at a test server. <strong>Reads only</strong> skips every command that is not known to be read-only.</div>
+  </div>
+
+  <div class="card" data-level="advanced" data-cat="execution" data-group="replaytargets" data-only="replay" id="replayTargetsCard">
+    <h3>Replay on several servers <span class="level-tag">Advanced</span></h3>
+    <div class="form-group"><label for="f-rptargets">Servers, one per line as name=host:port (empty: the server in Server)</label>
+      <textarea id="f-rptargets" rows="4" style="width:100%" data-path="replay.targets" data-kind="lines" placeholder="current=10.0.0.5:6379&#10;new=10.0.0.6:6379"></textarea></div>
+    <div class="grid">
+      <div class="field-check"><input type="checkbox" id="f-rpconc" data-path="replay.concurrent"><label for="f-rpconc">Replay on all servers at the same time</label></div>
+      <div class="form-group"><label for="f-rptol">Unchanged within (%)</label><input type="number" id="f-rptol" class="f-xs" data-path="replay.tolerance" min="0" max="1000"></div>
+    </div>
+    <p class="settings-note">With two or more servers the results are compared with the first. They share the connection settings (TLS, credentials from the environment) of the Server card.</p>
+  </div>
+
+  <div class="card" data-level="advanced" data-cat="execution" data-group="replaychecks" data-only="replay" id="replayChecksCard">
+    <h3>Replay checks <span class="level-tag">Advanced</span></h3>
+    <div class="field-check"><input type="checkbox" id="f-rpreq" data-path="replay.require_data"><label for="f-rpreq">Stop if the server does not hold the data the recording started with</label></div>
+    <div class="field-check"><input type="checkbox" id="f-rpdanger" data-path="replay.allow_dangerous"><label for="f-rpdanger">Allow harmful commands (FLUSHALL, CONFIG SET, DEBUG, ...) if the file holds them</label></div>
+  </div>
+
+  <div class="card" data-level="advanced" data-cat="data" data-group="import" data-only="replay" id="importCard">
+    <h3>Import captured traffic <span class="level-tag">Advanced</span></h3>
+    <p class="settings-note">Turn what a real server saw into a recording you can replay: the output of <code>MONITOR</code>, or an export of <code>SLOWLOG GET</code> as JSON. Credentials (<code>AUTH</code>, <code>HELLO</code>, <code>ACL</code>) are always dropped.</p>
+    <div class="form-group"><label for="impText">Paste the capture</label><textarea id="impText" rows="5" style="width:100%" placeholder='1700000000.000001 [0 10.0.0.1:5000] "SET" "k" "v"'></textarea></div>
+    <div class="grid">
+      <div class="form-group"><label for="impFile">or choose a file</label><input type="file" id="impFile"></div>
+      <div class="form-group" id="impPathRow"><label for="impPath">or a file on the server</label><input type="text" id="impPath" class="f-lg" placeholder="/path/to/monitor.log" autocomplete="off"></div>
+      <div class="form-group"><label for="impFormat">Format</label><select id="impFormat"><option value="auto">detect</option><option value="monitor">MONITOR output</option><option value="slowlog">SLOWLOG JSON</option></select></div>
+      <div class="form-group"><label for="impComp">Compression</label><select id="impComp"><option value="zstd">zstd</option><option value="gzip">gzip</option><option value="none">none</option></select></div>
+      <div class="field-check"><input type="checkbox" id="impDanger"><label for="impDanger">Keep harmful commands</label></div>
+    </div>
+    <div class="toolbar" style="margin-top:8px"><button class="btn btn-small" id="impGo" type="button">Convert to a recording</button><span class="settings-note" id="impMsg" role="status"></span></div>
   </div>
 
   <div class="card" data-level="advanced" data-cat="seed" data-group="seed" id="seedCard">
@@ -515,6 +599,14 @@ nav.tabs { background:var(--surface); border:1px solid var(--border); border-rad
   <h2>Live Metrics</h2>
   <div id="viewBanner"></div>
   <div id="liveEmpty" class="empty">No run yet. Start one from Settings, or open a stored run from Run History.</div>
+  <div id="replayLive" hidden>
+    <div id="rlPhase" class="settings-note" role="status"></div>
+    <div id="rlBanner"></div>
+    <div class="progress" aria-hidden="true"><div id="rlProgress"></div></div>
+    <table class="data" id="rlTargets"><thead><tr><th>Server</th><th>State</th><th class="num">Commands sent</th><th class="num">Progress</th><th class="num">Errors</th><th class="num">Time</th></tr></thead><tbody></tbody></table>
+    <div class="charts" id="rlCharts" style="margin-top:16px"><div class="chart-card"><h3>Replay throughput (ops/s)</h3><div class="chart-box"><canvas id="ch-rl-ops"></canvas></div></div></div>
+    <div id="rlResult" style="margin-top:16px"></div>
+  </div>
   <div id="liveBody" hidden>
     <div id="sweepBanner"></div>
     <div id="phaseLine" class="settings-note" role="status"></div>
@@ -651,11 +743,16 @@ nav.tabs { background:var(--surface); border:1px solid var(--border); border-rad
 <!-- ============ Replay Comparison ============ -->
 <section id="panel-replay" data-panel="replay" role="tabpanel" aria-labelledby="tab-replay" hidden>
   <h2>Replay Comparison</h2>
-  <p class="settings-note">Compare replays of the same recording on different servers or versions. Choose the JSON files <code>plgv replay -summary</code> wrote (one per server, or one file from <code>-targets</code>). The files are read in your browser and sent to this page's server only to be compared; nothing is stored. The first replay is the baseline.</p>
+  <p class="settings-note">Compare replays of the same recording on different servers or versions. Tick replays made on this page below, or choose the JSON files <code>plgv replay -summary</code> wrote (one per server, or one file from <code>-targets</code>). Files are read in your browser and sent to this page's server only to be compared. The first replay is the baseline.</p>
   <div class="toolbar">
     <label for="rpFiles">Replay summaries</label><input type="file" id="rpFiles" accept="application/json,.json" multiple>
     <label for="rpTol">Unchanged within</label><input type="number" id="rpTol" class="f-xs" min="0" max="1000" value="10"><span class="settings-note">%</span>
   </div>
+  <h3>Your replays</h3>
+  <div id="rpStoredMsg" class="settings-note"></div>
+  <table class="data" id="rpStored" hidden><thead><tr><th></th><th>When</th><th>Recording</th><th>Servers</th><th class="num">ops/s</th><th></th></tr></thead><tbody></tbody></table>
+  <div class="toolbar" id="rpStoredBar" hidden><button class="btn btn-small" id="rpStoredCompare" type="button">Compare selected</button></div>
+  <h3 style="margin-top:16px">Or compare saved files</h3>
   <div id="rpMsg" class="empty">Choose two or more replay summaries to compare. See docs/replay-comparison.md for how to make them.</div>
   <div id="rpBody" hidden></div>
 </section>
@@ -730,6 +827,7 @@ const S = {
   defaults: null, ops: {}, opNames: [], cfg: null, label: '',
   tab: 'settings', home: true, task: null, cat: 'basic', autoConc: null, live: { state: 'idle' }, view: null, viewId: null,
   runs: [], histSel: [], trends: null, lastState: 'idle', polling: null,
+  record: false, rec: { list: [], dir: '', free: false }, showReplay: false, replayView: null, replayId: null,
 };
 const ACTIVE = ['connecting', 'preloading', 'running', 'finishing'];
 const isActive = () => ACTIVE.includes(S.live.state);
@@ -831,6 +929,7 @@ function showTab(name) {
   if (name === 'history') loadHistory();
   if (name === 'compare') { loadHistory().then(fillCompareSelects); loadSweeps(); }
   if (name === 'trends') loadTrends();
+  if (name === 'replay') loadReplays();
   renderShell();
   renderTab(name);
   setTimeout(resizeCharts, 0);
@@ -863,7 +962,14 @@ const CATS = [
   { id: 'data', title: 'Data and commands' }, { id: 'seed', title: 'Seed and deterministic' }, { id: 'metrics', title: 'Metrics and reporting' },
 ];
 const levelOn = lv => lv === 'basic' || !!LEVELS[lv];
-function visibleCats() { return CATS.filter(c => $$(`[data-cat="${c.id}"]`).some(card => levelOn(card.dataset.level))); }
+// Which cards belong to the chosen task: a replay needs only the connection cards and its own; Record has one of its own.
+const REPLAY_GROUPS = ['target', 'tls', 'client'];
+function cardInTask(card) {
+  const o = card.dataset.only;
+  if (o) return S.task === o;
+  return S.task !== 'replay' || REPLAY_GROUPS.includes(card.dataset.group);
+}
+function visibleCats() { return CATS.filter(c => $$(`[data-cat="${c.id}"]`).some(card => levelOn(card.dataset.level) && cardInTask(card))); }
 function errorCats() { const s = new Set(); $$('#taskView [aria-invalid]').forEach(i => { const c = i.closest('[data-cat]'); if (c) s.add(c.dataset.cat); }); return s; }
 function renderCats(cats) {
   const nav = clear($('#catNav')); const bad = errorCats();
@@ -877,7 +983,7 @@ function applyLevels() {
   const multi = LEVELS.advanced || LEVELS.expert;
   const cats = visibleCats();
   if (!cats.find(c => c.id === S.cat)) S.cat = 'basic';
-  $$('[data-level][data-cat]').forEach(c => { c.hidden = !levelOn(c.dataset.level) || (multi && c.dataset.cat !== S.cat); });
+  $$('[data-level][data-cat]').forEach(c => { c.hidden = !levelOn(c.dataset.level) || !cardInTask(c) || (multi && c.dataset.cat !== S.cat); });
   $('#catNav').hidden = !multi; $('#settingsLayout').classList.toggle('has-cats', multi);
   if (multi) renderCats(cats);
   $('#lvlAdvanced').setAttribute('aria-expanded', String(LEVELS.advanced));
@@ -898,6 +1004,7 @@ function populateInputs() {
     if (p.startsWith('workload.mix')) return;
     const v = getPath(S.cfg, p);
     if (inp.type === 'checkbox') inp.checked = !!v;
+    else if (inp.dataset.kind === 'lines') inp.value = Array.isArray(v) ? v.join('\n') : '';
     else if (inp.dataset.kind === 'list' || inp.dataset.kind === 'slist') inp.value = Array.isArray(v) ? v.join(', ') : (v == null ? '' : String(v));
     else inp.value = v == null ? '' : v;
   });
@@ -913,6 +1020,8 @@ function onInput(e) {
   if (inp.type === 'checkbox') v = inp.checked;
   else if (inp.dataset.kind === 'list') v = inp.value.split(/[\s,;]+/).filter(Boolean).map(Number);
   else if (inp.dataset.kind === 'slist') v = inp.value.split(/[\s,;]+/).filter(Boolean);
+  else if (inp.dataset.kind === 'lines') v = inp.value.split('\n').map(x => x.trim()).filter(Boolean);
+  else if (inp.dataset.kind === 'num') v = Number(inp.value);
   else if (inp.type === 'number') v = inp.value === '' ? 0 : Number(inp.value);
   else v = inp.value;
   setPath(S.cfg, p, v);
@@ -923,6 +1032,7 @@ function onInput(e) {
   if (p === 'run.load_profile.kind') syncProfile();
   if (p === 'run.sweep.kind') syncSweep();
   if (p === 'target.mode') syncMode();
+  if (p === 'replay.path') syncRecordingSelection();
   updateSummary();
 }
 document.addEventListener('input', e => { if (e.target.closest('#panel-settings')) onInput(e); });
@@ -966,6 +1076,14 @@ function syncSrvOptions() { $('#srvOptions').hidden = !getPath(S.cfg, 'server_me
 
 function updateSummary() {
   const c = S.cfg; if (!c) return;
+  if (S.task === 'replay') {
+    const rp = c.replay || replayDefaults();
+    const targets = (rp.targets || []).length ? rp.targets.length + ' servers' : ((getPath(c, 'target.uris') || []).join(', ') || 'no server address');
+    $('#launchSummary').textContent = ['Replay', rp.path ? rp.path.split(/[\\/]/).pop() : 'no recording chosen',
+      rp.speed === 0 ? 'as fast as possible' : (rp.speed === 1 ? 'recorded pace' : rp.speed + 'x'), rp.reads_only ? 'reads only' : 'all commands',
+      rp.iterations > 1 ? rp.iterations + ' iterations' : null, targets].filter(Boolean).join(' \u00b7 ');
+    return;
+  }
   const mix = (c.workload && c.workload.mix) || [];
   const sw = getPath(c, 'run.sweep.kind'); const swv = getPath(c, 'run.sweep.values') || [];
   const pk = getPath(c, 'run.load_profile.kind') || 'fixed';
@@ -1150,6 +1268,8 @@ const ICONS = {
   columns: '<rect x="3" y="3" width="7" height="18" rx="1"/><rect x="14" y="3" width="7" height="18" rx="1"/>',
   repeat: '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
   trend: '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>',
+  record: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/>',
+  play: '<circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/>',
 };
 const RAW_EXAMPLE = '6 GET {key}\n2 SET {key} {value} EX 60\n1 HSET {key:hash} visits {n}';
 const PRESET_ICON = { cache: 'bolt', session: 'user', leaderboard: 'bars', queue: 'list', 'rate-limiter': 'shield', 'pubsub-fanout': 'radio', counters: 'plus', 'big-keys': 'box', mixed: 'shuffle' };
@@ -1165,6 +1285,8 @@ function taskDefs() {
     { id: 'custom', group: 'general', title: 'Custom workload', icon: 'sliders', desc: 'Build your own operation mix from every command family, with weights.' },
     { id: 'raw', group: 'general', title: 'Your own commands', icon: 'terminal', desc: 'Paste Valkey commands and run them as the workload.' },
     { id: 'sweep', group: 'general', title: 'Find the limit', icon: 'gauge', desc: 'Run the same workload at 4, 16, 64 and 128 workers to see where throughput stops growing.' },
+    { id: 'record', group: 'general', title: 'Record a workload', icon: 'record', desc: 'Run a workload and save every command it sends to a file, so the same traffic can be replayed on another server.' },
+    { id: 'replay', group: 'general', title: 'Replay a recorded workload', icon: 'play', desc: 'Send a saved recording to one or more servers, and compare how each one answered.' },
     ...(S.presets || []).map(p => ({ id: 'preset:' + p.name, group: 'preset', title: p.title, icon: PRESET_ICON[p.name] || 'db', desc: p.description })),
   ];
 }
@@ -1191,12 +1313,17 @@ function resetToDefaults() {
   ['uris', 'mode', 'sentinel', 'tls', 'read_from_replicas', 'client'].forEach(k => { if (old[k] !== undefined) S.cfg.target[k] = JSON.parse(JSON.stringify(old[k])); });
   S.label = ''; S.autoConc = null;
 }
+const replayDefaults = () => ({ path: '', speed: 1, reads_only: false, iterations: 1, iteration_delay: '', targets: [], concurrent: false, tolerance: 10, require_data: false, allow_dangerous: false });
+// The workload settings the server understands: the replay form's settings travel separately.
+function cleanCfg() { const c = JSON.parse(JSON.stringify(S.cfg)); delete c.replay; return c; }
 // The settings that belong to the kind of workload; everything else is kept.
 function applyTaskDefaults(id) {
   const d = JSON.parse(JSON.stringify(S.defaults));
   if (S.autoConc !== null && S.cfg.run.concurrency === S.autoConc) S.cfg.run.concurrency = d.run.concurrency; // undo the previous workload's worker count
   S.autoConc = null;
   S.cfg.run.sweep = d.run.sweep; S.cfg.workload = d.workload; S.cfg.dataset = d.dataset;
+  S.cfg.record = d.record; S.record = id === 'record'; S.cfg.replay = replayDefaults();
+  if (id === 'record') S.cfg.record.compression = 'zstd';
   if (id.startsWith('preset:')) {
     const pr = (S.presets || []).find(x => x.name === id.slice(7));
     applyPreset(id.slice(7));
@@ -1210,6 +1337,7 @@ function applyTaskDefaults(id) {
   populateInputs();
   if (id === 'raw') { if (!$('#rawText').value.trim()) $('#rawText').value = RAW_EXAMPLE; applyRaw(true); }
   if (id === 'sweep') { populateInputs(); }
+  if (id === 'replay') loadRecordings();
 }
 function selectTask(id, reset) {
   if (isActive()) return; // the cards are locked while a run is going
@@ -1227,6 +1355,8 @@ function renderTask() {
   if (!t) return;
   $('#taskTitle').textContent = t.title; $('#taskDesc').textContent = t.desc;
   $('#taskSel').value = t.id;
+  $('#startBtn').textContent = t.id === 'replay' ? 'Start replay' : t.id === 'record' ? 'Start recording' : 'Start workload';
+  $('#recFolder').textContent = S.rec.dir ? `Recordings are saved in ${S.rec.dir}.` : '';
   applyLevels(); updateSummary();
 }
 $('#taskSel').addEventListener('change', e => selectTask(e.target.value));
@@ -1339,12 +1469,12 @@ $('#savedLoad').addEventListener('click', async () => {
   const name = $('#savedSelect').value; if (!name) return;
   const r = await api('GET', '/api/settings/' + encodeURIComponent(name));
   if (!r.ok) { savedMsg(r.data.error || 'Could not load.', true); return; }
-  S.cfg = r.data.config; clearAllErrors(); populateInputs(); savedMsg(`Loaded "${name}".`);
+  S.cfg = r.data.config; S.cfg.replay = replayDefaults(); S.record = !!(S.cfg.record && (S.cfg.record.path || S.cfg.record.outcomes)); clearAllErrors(); populateInputs(); savedMsg(`Loaded "${name}".`);
 });
 $('#savedSave').addEventListener('click', async () => {
   const name = $('#savedName').value.trim();
   if (!name) { savedMsg('Enter a name to save as.', true); return; }
-  const r = await api('PUT', '/api/settings/' + encodeURIComponent(name), { config: S.cfg });
+  const r = await api('PUT', '/api/settings/' + encodeURIComponent(name), { config: cleanCfg() });
   if (!r.ok) { savedMsg((r.data.errors && r.data.errors[0] && r.data.errors[0].message) || r.data.error || 'Could not save.', true); return; }
   await loadSavedList(name); $('#savedName').value = ''; savedMsg(`Saved "${name}". Credentials are never saved.`);
 });
@@ -1357,12 +1487,15 @@ $('#savedDelete').addEventListener('click', async () => {
 /* ---------- start / stop ---------- */
 $('#startBtn').addEventListener('click', async () => {
   clearAllErrors();
+  const replaying = S.task === 'replay';
+  const what = replaying ? 'The replay' : 'The workload';
   $('#startBtn').setAttribute('aria-busy', 'true');
-  const r = await api('POST', '/api/start', { config: S.cfg, label: S.label });
+  const r = replaying ? await api('POST', '/api/replay', { config: cleanCfg(), replay: S.cfg.replay, label: S.label })
+    : await api('POST', '/api/start', { config: cleanCfg(), label: S.label, record: S.record });
   $('#startBtn').removeAttribute('aria-busy');
-  if (r.status === 202) { S.view = null; S.viewId = null; S.range = null; await pollLive(); showTab('live'); return; }
-  if (r.status === 400) { showErrors(r.data.errors || [], 'The workload was not started: fix these settings.'); return; }
-  showErrors([{ message: r.data.error || 'Could not start the run.' }], 'The workload was not started.');
+  if (r.status === 202) { S.view = null; S.viewId = null; S.range = null; S.showReplay = replaying; S.replayView = null; S.replayId = null; await pollLive(); showTab('live'); return; }
+  if (r.status === 400) { showErrors(r.data.errors || [], what + ' was not started: fix these settings.'); return; }
+  showErrors([{ message: r.data.error || 'Could not start.' }], what + ' was not started.');
 });
 $('#stopBtn').addEventListener('click', async () => { await api('POST', '/api/stop', {}); });
 
@@ -1372,14 +1505,16 @@ async function pollLive() {
   if (!r.ok) return;
   const prev = S.lastState;
   S.live = r.data;
+  if (r.data.kind === 'replay' && (ACTIVE.includes(r.data.state) || r.data.state === 'error') && !S.view) S.showReplay = true; // a page opened during a replay shows it
   S.lastState = r.data.state;
   updateStatus();
   if (r.data.state === 'done' && r.data.run_id && !S.view && (ACTIVE.includes(prev) || prev === 'idle')) await onRunDone(r.data.run_id);
+  if (r.data.state === 'done' && r.data.replay_id && S.replayId !== r.data.replay_id && (ACTIVE.includes(prev) || prev === 'idle')) await onReplayDone(r.data.replay_id);
   if (isActive() || prev !== S.lastState) renderTab(S.tab);
 }
 async function onRunDone(id) {
   const r = await api('GET', '/api/runs/' + id);
-  if (r.ok) { S.view = r.data; S.viewId = id; S.range = null; }
+  if (r.ok) { S.view = r.data; S.viewId = id; S.range = null; S.showReplay = false; S.replayView = null; }
   await loadHistory();
   updateStatus();
   renderTab(S.tab);
@@ -1394,7 +1529,8 @@ function updateStatus() {
   // While a run goes the clock counts it; after it, it shows the finished run's real length.
   const live = isActive() || st === 'done' || st === 'error';
   const elapsed = isActive() ? S.live.elapsed_seconds : (S.view && S.view.client ? S.view.client.elapsed_seconds : S.live.elapsed_seconds);
-  $('#runClock').textContent = live ? `${mmss(elapsed)} / ${mmss(S.live.duration_seconds)}` : '00:00 / 00:00';
+  const replaying = S.live.kind === 'replay';
+  $('#runClock').textContent = live ? (replaying ? mmss(elapsed) : `${mmss(elapsed)} / ${mmss(S.live.duration_seconds)}`) : '00:00 / 00:00';
   $('#startBtn').disabled = isActive();
   $$('.task-main, .task-defaults').forEach(b => { b.disabled = isActive(); });
   $('#taskSel').disabled = isActive(); $('#taskReset').disabled = isActive();
@@ -1428,6 +1564,13 @@ function banner(vm) {
     b.append(el('div', { class: 'banner' + (s.stopped ? ' warn' : '') }, text,
       el('a', { href: '/api/runs/' + vm.id + '/report', target: '_blank', rel: 'noopener', text: 'Open report' }),
       el('a', { href: '/api/runs/' + vm.id + '/report?download=1', text: 'Download report' })));
+    const rc = s.recording;
+    if (rc) {
+      const waits = rc.waits ? ` Workers waited for the writer ${fmtInt(rc.waits)} times (${rc.wait_total_ms.toFixed(0)} ms in all, ${rc.wait_max_ms.toFixed(0)} ms at most).` : '';
+      b.append(el('div', { class: 'banner' + (rc.status === 'complete' ? '' : ' warn'), 'data-testid': 'recording-banner' },
+        `Recorded ${fmtInt(rc.ops)} commands to ${rc.name} (${fmtBytes(rc.file_bytes || rc.bytes)}, ${rc.compression}, ${rc.status}${rc.reason ? ': ' + rc.reason : ''}).${waits} `,
+        rc.status === 'failed' ? null : el('button', { class: 'btn btn-small', type: 'button', id: 'replayThisBtn', text: 'Replay this recording', onclick: () => replayRecording(rc.path) })));
+    }
   }
 }
 
@@ -1457,6 +1600,8 @@ function renderSweepBanner() {
 /* ---------- Live Metrics ---------- */
 function kpi(k, v, s) { return el('div', { class: 'kpi' }, el('div', { class: 'k', text: k }), el('div', { class: 'v', text: v }), s ? el('div', { class: 's', text: s }) : null); }
 function renderLive() {
+  if (replayShown()) { renderReplayLive(); return; }
+  $('#replayLive').hidden = true;
   const vm = viewModel();
   $('#liveEmpty').hidden = !!vm; $('#liveBody').hidden = !vm;
   banner(vm);
@@ -1736,7 +1881,7 @@ function renderHistory() {
 async function openRun(id) {
   const r = await api('GET', '/api/runs/' + id);
   if (!r.ok) return;
-  S.view = r.data; S.viewId = id; S.range = null; showTab('live');
+  S.view = r.data; S.viewId = id; S.range = null; S.showReplay = false; showTab('live');
 }
 async function deleteRun(r) {
   if (!confirm(`Delete run "${r.label || r.id}"?`)) return;
@@ -1933,10 +2078,167 @@ function renderTrends() {
   setTimeout(resizeCharts, 0);
 }
 
+/* ---------- recordings: list, details, upload, import ---------- */
+const recName = p => String(p || '').split(/[\\/]/).pop();
+const recLabel = e => [e.name, fmtBytes(e.size_bytes), e.ops != null ? fmtInt(e.ops) + ' commands' : e.compression, fmtTime(e.modified_at),
+  e.imported ? 'imported' : null, e.status && e.status !== 'complete' ? e.status : null, e.problem ? 'cannot be replayed: ' + e.problem : null].filter(Boolean).join(' · ');
+function recMsg(text, bad) { const n = $('#rpListMsg'); n.textContent = text || ''; n.style.color = bad ? 'var(--danger)' : ''; }
+async function loadRecordings(selectPath) {
+  const r = await api('GET', '/api/recordings');
+  if (!r.ok) { recMsg((r.data && r.data.error) || 'Could not list the recordings.', true); return; }
+  S.rec = { list: r.data.recordings || [], dir: r.data.dir || '', free: !!r.data.free_paths };
+  const sel = clear($('#rpList'));
+  S.rec.list.forEach(e => sel.append(el('option', { value: e.path, text: recLabel(e), disabled: !!e.problem })));
+  $('#rpFreeRow').hidden = !S.rec.free;
+  $('#impPathRow').hidden = !S.rec.free;
+  $('#rpPathNote').textContent = S.rec.free
+    ? 'A typed path is read by the machine running plgv web. Only a plgv recording is opened.'
+    : 'Typing a path is off because plgv web accepts remote connections. Pick a recording from the list or upload one.';
+  $('#recFolder').textContent = S.rec.dir ? `Recordings are saved in ${S.rec.dir}.` : '';
+  recMsg(S.rec.list.length ? '' : `No recordings yet. Record a workload, import captured traffic, or upload a file. The folder is ${S.rec.dir}.`);
+  const want = selectPath || S.cfg.replay.path || (S.rec.list.find(e => !e.problem) || {}).path;
+  if (want) setRecording(want); else syncRecordingSelection();
+}
+function setRecording(path) { S.cfg.replay.path = path; $('#rpPath').value = path; syncRecordingSelection(); updateSummary(); }
+function syncRecordingSelection() {
+  const sel = $('#rpList'); const p = S.cfg && S.cfg.replay ? S.cfg.replay.path : '';
+  sel.value = Array.from(sel.options).some(o => o.value === p) ? p : '';
+  const inFolder = !!(S.rec.dir && p && p.startsWith(S.rec.dir));
+  $('#rpDelete').disabled = !inFolder; $('#rpInfoBtn').disabled = !p;
+}
+$('#rpList').addEventListener('change', e => { if (e.target.value) { setRecording(e.target.value); clearError($('#rpPath')); } });
+$('#rpRefresh').addEventListener('click', () => loadRecordings());
+$('#rpInfoBtn').addEventListener('click', async () => {
+  const box = clear($('#rpInfo')); const p = S.cfg.replay.path; if (!p) return;
+  const r = await api('GET', '/api/recordings/info?path=' + encodeURIComponent(p));
+  box.hidden = false;
+  if (!r.ok) { box.append(el('div', { class: 'inline-error', role: 'alert', text: r.data.error || 'Could not read the recording.' })); return; }
+  const d = r.data;
+  box.append(el('div', { class: 'kv', 'data-testid': 'recording-info' },
+    ...[['Status', d.status + (d.reason ? ' (' + d.reason + ')' : '')], ['Commands', fmtInt(d.ops) + ' in ' + fmtInt(d.groups) + ' groups'], ['Workers', String(d.workers)],
+      ['Compression', d.compression], ['Size on disk', fmtBytes(d.file_bytes)], ['Recorded on', d.entry && d.entry.created_at ? fmtTime(d.entry.created_at) : '-'],
+      ['Server version', (d.entry && d.entry.server_version) || '-'], ['plgv version', (d.entry && d.entry.plgv_version) || '-'],
+      ['Outcomes', d.outcomes ? (d.checksums ? 'status, time and checksum' : 'status and time') : 'not recorded'], ['Starting data', d.data_fingerprint ? 'remembered' : 'not remembered'],
+      ['Workload', d.mix || (d.import ? 'imported traffic' : '-')], ['Commands hash', String(d.commands_hash || '').slice(0, 16)]]
+      .map(([k, v]) => el('div', {}, el('span', { class: 'k', text: k }), el('span', { text: v })))));
+  if ((d.commands || []).length) box.append(el('table', { class: 'data', style: 'margin-top:8px' }, el('thead', {}, el('tr', {}, el('th', { text: 'Command' }), el('th', { class: 'num', text: 'Count' }))),
+    el('tbody', {}, ...d.commands.slice(0, 12).map(c => el('tr', {}, el('td', { text: c.command }), el('td', { class: 'num', text: fmtInt(c.ops) }))))));
+  if (d.import) box.append(el('p', { class: 'settings-note', text: `Imported from ${(d.import.sources || []).join(', ')}: ${fmtInt(d.import.entries)} entries read.` }));
+});
+$('#rpDelete').addEventListener('click', async () => {
+  const p = S.cfg.replay.path; if (!p) return;
+  if (!confirm(`Delete ${recName(p)} from the recordings folder?`)) return;
+  const r = await api('DELETE', '/api/recordings/delete?name=' + encodeURIComponent(recName(p)));
+  if (!r.ok) { recMsg(r.data.error || 'Could not delete.', true); return; }
+  S.cfg.replay.path = ''; $('#rpPath').value = ''; clear($('#rpInfo')).hidden = true;
+  await loadRecordings(); recMsg(`Deleted ${recName(p)}.`);
+});
+$('#rpUpload').addEventListener('change', async e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  recMsg(`Uploading ${f.name}...`);
+  const r = await fetch('/api/recordings/upload?name=' + encodeURIComponent(f.name), { method: 'PUT', headers: { 'Content-Type': 'application/octet-stream' }, body: f });
+  let d = {}; try { d = await r.json(); } catch (x) { /* empty */ }
+  e.target.value = '';
+  if (!r.ok) { recMsg(d.error || 'The upload failed.', true); return; }
+  await loadRecordings(d.recording.path); recMsg(`Uploaded ${f.name} as ${d.recording.name}.`);
+});
+$('#impFile').addEventListener('change', e => {
+  const f = e.target.files && e.target.files[0]; if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => { $('#impText').value = String(rd.result); $('#impMsg').textContent = `Loaded ${f.name}. Choose "Convert to a recording".`; };
+  rd.readAsText(f);
+});
+$('#impGo').addEventListener('click', async () => {
+  const msg = $('#impMsg'); msg.style.color = '';
+  const text = $('#impText').value, path = $('#impPath').value.trim();
+  const body = { format: $('#impFormat').value, compression: $('#impComp').value, allow_dangerous: $('#impDanger').checked };
+  if (text.trim()) body.text = text; else if (path) body.path = path;
+  $('#impGo').setAttribute('aria-busy', 'true');
+  const r = await api('POST', '/api/import-traffic', body);
+  $('#impGo').removeAttribute('aria-busy');
+  if (!r.ok) { msg.textContent = r.data.error || 'Could not convert.'; msg.style.color = 'var(--danger)'; return; }
+  const sk = Object.entries(r.data.skipped || {}).map(([k, n]) => `${fmtInt(n)} ${k}`).join('; ');
+  msg.textContent = `Converted ${fmtInt(r.data.commands)} commands from ${fmtInt(r.data.entries)} entries into ${r.data.recording.name}, and chose it for the replay.` + (sk ? ` Left out: ${sk}.` : '');
+  await loadRecordings(r.data.recording.path);
+});
+// "Replay this recording" from a finished run.
+async function replayRecording(path) {
+  selectTask('replay', false);
+  await loadRecordings(path);
+}
+
+/* ---------- replay: live view, result, stored list ---------- */
+const replayShown = () => S.showReplay && (S.live.kind === 'replay' || !!S.replayView);
+async function onReplayDone(id) {
+  const r = await api('GET', '/api/replays/' + encodeURIComponent(id));
+  if (r.ok) { S.replayView = r.data; S.replayId = id; S.view = null; S.viewId = null; S.showReplay = true; }
+  updateStatus(); renderTab(S.tab);
+}
+const RL_STATE = { waiting: 'waiting', running: 'running', done: 'done', failed: 'failed' };
+function renderReplayLive() {
+  $('#liveEmpty').hidden = true; $('#liveBody').hidden = true; $('#replayLive').hidden = false; clear($('#viewBanner'));
+  const l = S.live; const active = isActive() && l.kind === 'replay'; const rv = !active ? S.replayView : null;
+  const phase = $('#rlPhase');
+  if (active) phase.textContent = { connecting: 'Connecting to the server...', running: 'Replaying.', finishing: 'Saving the replay...' }[l.state] || 'Replaying.';
+  else if (l.kind === 'replay' && l.state === 'error') phase.textContent = 'The replay failed. ' + (l.error || '');
+  else phase.textContent = rv ? (rv.stopped ? 'Stopped early.' : 'Finished.') : '';
+  phase.style.color = l.kind === 'replay' && l.state === 'error' ? 'var(--danger)' : '';
+  const lr = l.kind === 'replay' ? l.replay : null;
+  const rows = lr ? lr.targets : [];
+  const total = lr && lr.recorded_ops ? lr.recorded_ops * Math.max(1, lr.iterations || 1) : 0;
+  const tb = clear($('#rlTargets tbody'));
+  rows.forEach(t => {
+    const pct = total && t.state === 'running' ? Math.min(100, t.ops / total * 100) : (t.state === 'done' ? 100 : null);
+    tb.append(el('tr', { 'data-target': t.name }, el('td', {}, el('strong', { text: t.name }), el('span', { class: 'settings-note', text: ' ' + t.addr })),
+      el('td', {}, el('span', { class: 'chip ' + (t.state === 'failed' ? 'critical' : t.state === 'done' ? 'ok' : t.state === 'running' ? 'info' : ''), text: RL_STATE[t.state] || t.state }), t.error ? el('div', { class: 'settings-note', text: t.error }) : null),
+      el('td', { class: 'num', text: fmtInt(t.ops) }), el('td', { class: 'num', text: pct == null ? '-' : pct.toFixed(0) + '%' }), el('td', { class: 'num', text: fmtInt(t.errors) }), el('td', { class: 'num', text: (t.elapsed_seconds || 0).toFixed(0) + 's' })));
+  });
+  $('#rlTargets').hidden = !rows.length;
+  const done = rows.filter(t => t.state === 'done' || t.state === 'failed').length;
+  $('#rlProgress').style.width = (rows.length ? (active ? done / rows.length * 100 : 100) : 0) + '%';
+  const series = rows.map((t, i) => ({ label: t.name, data: xy(t.series || [], 'offset_s', 'ops_per_sec'), color: [COLORS.sky, COLORS.sun, COLORS.fire, COLORS.purple][i % 4] }));
+  $('#rlCharts').hidden = !rows.length;
+  if (rows.length) drawChart('ch-rl-ops', series, 'ops/s');
+  const box = clear($('#rlResult'));
+  const info = clear($('#rlBanner'));
+  if (rv) {
+    info.append(el('div', { class: 'banner' + (rv.stopped ? ' warn' : ''), 'data-testid': 'replay-banner' },
+      `Replay of ${rv.recording.name}: ${rv.mode === 'single' ? 'one server' : rv.targets.length + ' servers, ' + rv.mode}, ${rv.speed === 0 ? 'as fast as possible' : rv.speed === 1 ? 'at the recorded pace' : rv.speed + 'x'}, ${rv.reads_only ? 'reads only' : 'all commands'}${rv.iterations > 1 ? ', ' + rv.iterations + ' iterations' : ''}${rv.stopped ? ' (stopped early)' : ''}. `,
+      el('a', { href: '#', text: 'Compare with other replays', onclick: ev => { ev.preventDefault(); showTab('replay'); } })));
+    renderReplayCompare({ summaries: rv.targets, comparisons: rv.comparisons || [] }, box);
+  }
+}
+async function loadReplays() {
+  const r = await api('GET', '/api/replays');
+  const list = (r.data && r.data.replays) || []; S.replays = list;
+  const tb = clear($('#rpStored tbody'));
+  list.forEach(m => tb.append(el('tr', { 'data-replay': m.id },
+    el('td', {}, el('input', { type: 'checkbox', 'data-rp-pick': m.id, 'aria-label': 'Compare ' + m.id })),
+    el('td', { text: fmtTime(m.finished_at) + (m.label ? ' · ' + m.label : '') + (m.stopped ? ' (stopped)' : '') }), el('td', { text: m.recording + (m.reads_only ? ' · reads only' : '') }),
+    el('td', { text: m.targets.map(t => t.name).join(', ') }), el('td', { class: 'num', text: m.targets.map(t => fmtInt(t.ops_per_sec)).join(' / ') }),
+    el('td', {}, el('button', { class: 'btn btn-small', type: 'button', text: 'Open', onclick: () => openReplay(m.id) }),
+      el('button', { class: 'btn btn-small', type: 'button', text: 'Delete', onclick: async () => { if (confirm('Delete this replay?')) { await api('DELETE', '/api/replays/' + m.id); loadReplays(); } } })))));
+  $('#rpStored').hidden = !list.length; $('#rpStoredBar').hidden = !list.length;
+  $('#rpStoredMsg').textContent = list.length ? 'Tick two or more replays of the same recording and compare them.' : 'No replays yet. Choose "Replay a recorded workload" on the front page.';
+}
+async function openReplay(id) {
+  const r = await api('GET', '/api/replays/' + encodeURIComponent(id));
+  if (!r.ok) return;
+  S.replayView = r.data; S.replayId = id; S.view = null; S.viewId = null; S.showReplay = true;
+  showTab('live');
+}
+$('#rpStoredCompare').addEventListener('click', async () => {
+  const ids = $$('[data-rp-pick]:checked').map(i => i.dataset.rpPick);
+  const files = [];
+  for (const id of ids) { const r = await api('GET', '/api/replays/' + encodeURIComponent(id)); if (r.ok) files.push(...r.data.targets); }
+  if (files.length < 2) { $('#rpMsg').hidden = false; $('#rpMsg').textContent = 'Tick replays that hold two or more servers in total.'; $('#rpBody').hidden = true; return; }
+  await replayCompare(files);
+});
+
 /* ---------- init ---------- */
 async function init() {
   const r = await api('GET', '/api/config');
-  S.defaults = r.data.defaults; S.ops = r.data.ops; S.opNames = r.data.op_names; S.presets = r.data.presets || [];
+  S.defaults = r.data.defaults; S.defaults.replay = replayDefaults(); S.ops = r.data.ops; S.opNames = r.data.op_names; S.presets = r.data.presets || [];
   fillPresets(); fillTasks();
   $('#version').textContent = r.data.version || '';
   S.cfg = JSON.parse(JSON.stringify(S.defaults));
@@ -1954,6 +2256,8 @@ async function init() {
     sm[1].split(',').forEach(kv => { const i = kv.indexOf(':'); if (i < 1) return; let v = decodeURIComponent(kv.slice(i + 1)); const n = Number(v); v = v === 'true' ? true : v === 'false' ? false : (v !== '' && !isNaN(n) ? n : v); const path = kv.slice(0, i), cur = getPath(S.cfg, path); if (Array.isArray(cur)) v = String(v).split(';').filter(Boolean).map(x => typeof cur[0] === 'number' || (cur.length === 0 && path.includes('values')) ? Number(x) : x); setPath(S.cfg, path, v); });
     populateInputs();
   }
+  const tkm = /task=(\w+)/.exec(location.hash || '');
+  if (tkm && taskDef(tkm[1])) selectTask(tkm[1]);
   const prm = /preset=([\w-]+)/.exec(location.hash || '');
   if (prm) selectTask('preset:' + prm[1]); // #preset=name opens that workload's settings, defaults selected
   else if (sm || /levels=/.test(location.hash || '')) { S.task = S.task || 'standard'; S.home = false; renderTask(); renderShell(); }

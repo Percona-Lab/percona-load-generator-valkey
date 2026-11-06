@@ -30,6 +30,7 @@ Percona Load Generator for Valkey (`plgv`) generates realistic load against Valk
 - Deterministic mode (`-ops`, `-deterministic`) gives the same traffic every time, with a traffic fingerprint.
 - `plgv import-traffic` turns `MONITOR` and `SLOWLOG` output into a recording, with credentials dropped.
 - Multi-target replay (`-targets`, sequential or `-concurrent`) and `plgv compare` show differences between servers or versions.
+- In the web UI, **Record a workload** and **Replay a recorded workload** do the same from the page: a Record card (compression, backpressure, outcomes, checksums, starting-data fingerprint), a list of recordings with details, upload and delete, replay speed, reads-only, iterations, several servers one after the other or at once, live progress per server, a stored result with the comparison, and **Import captured traffic**. A path can be typed as well as chosen, but only while `plgv web` listens on loopback. See `docs/record-and-replay-web-ui.md`.
 
 **New: Cluster and Sentinel**
 - Slot routing, hash tags for multi-key commands, replica reads, and per-node client and server results.
@@ -56,7 +57,6 @@ Percona Load Generator for Valkey (`plgv`) generates realistic load against Valk
 
 **Limits**
 - Tested on Valkey 9.1.3 (and 8.0.12 for replay). Redis OSS has not been tested.
-- Recording and replay are available from the command line only; the web UI cannot record or start a replay.
 
 ---
 

@@ -34,6 +34,11 @@ time, so no screen is long.
 | **Seed and deterministic** | Random seed, operation budget and deterministic traffic (Advanced). See [deterministic-mode.md](deterministic-mode.md). |
 | **Metrics and reporting** | Key-space analysis, chart sample interval (Advanced), slowlog polling (Expert). See [key-space-analysis.md](key-space-analysis.md). |
 
+**Record a workload** adds a **Record** card to Basic settings. **Replay a recorded workload** shows only what a replay
+uses: the Server card, *Recording to replay* and *Replay options* in Basic settings; Advanced adds TLS (Connection),
+*Replay on several servers* and *Replay checks* (Workload execution) and *Import captured traffic* (Data and commands).
+It has no Seed or Metrics category. See [record-and-replay-web-ui.md](record-and-replay-web-ui.md).
+
 A category appears only when it has something to show at the levels you ticked. Turn a level off while you
 are on one of its categories and the page returns to **Basic settings**.
 

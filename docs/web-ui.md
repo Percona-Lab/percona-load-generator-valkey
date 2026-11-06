@@ -36,6 +36,8 @@ The front page asks **What do you want to do?** and shows a card for each kind o
 | **Custom workload** | Build your own operation mix from every command family ([custom-workload-builder.md](custom-workload-builder.md)). |
 | **Your own commands** | Paste Valkey commands and run them as the workload ([raw-injector.md](raw-injector.md)). |
 | **Find the limit** | Run the same workload at 4, 16, 64 and 128 workers ([load-profiles-and-sweep.md](load-profiles-and-sweep.md)). |
+| **Record a workload** | Run a workload and save every command to a file ([record-and-replay-web-ui.md](record-and-replay-web-ui.md)). |
+| **Replay a recorded workload** | Send a recording to one or more servers and compare them ([record-and-replay-web-ui.md](record-and-replay-web-ui.md)). |
 | **Cache, Session store, Leaderboard, Work queue, Rate limiter, Pub/sub fan-out, Counters and analytics, Big keys stress, Mixed** | Run a typical application's traffic ([presets.md](presets.md)). |
 | **Open completed runs**, **Compare runs**, **Compare replays**, **Trends** | Go to the results sections. |
 
@@ -74,7 +76,7 @@ Once a workload is chosen, a row of tabs appears under the header. The brand (**
 | **Key Space** | Types, sizes, expiry and the biggest keys after a run. | [key-space-analysis.md](key-space-analysis.md) |
 | **Insights** | Findings with evidence and advice. | [insights.md](insights.md) |
 | **Run History** | Every finished run; open, report, delete, pick two to compare. | [trends-and-history.md](trends-and-history.md) |
-| **Replay Comparison** | Compare replays of one recording on different servers (files from `plgv replay -summary`). | [replay-comparison.md](replay-comparison.md) |
+| **Replay Comparison** | Your replays, and files from `plgv replay -summary`, compared. | [replay-comparison.md](replay-comparison.md), [record-and-replay-web-ui.md](record-and-replay-web-ui.md) |
 | **Compare Runs** | Two runs side by side, and sweep results. | [compare-runs.md](compare-runs.md), [load-profiles-and-sweep.md](load-profiles-and-sweep.md) |
 | **Trends** | The same workload over time, with regression flags. | [trends-and-history.md](trends-and-history.md) |
 
@@ -114,7 +116,7 @@ and a line gives the statistics for just that range. See [load-profiles-and-swee
 
 The address bar supports a few shortcuts, handy for sharing or for documentation:
 `#tab=history`, `#run=<run id>&tab=server`, `#compare=<id>,<id>`, `#tab=settings&levels=advanced,expert`
-`#srv=on`, `#sweep=<sweep id>`, `#run=<id>&tab=live&range=2-10`, and `#set=path:value,...` to pre-fill settings (lists use `;`, for example `#set=target.uris:127.0.0.1:7001;127.0.0.1:7002`).
+`#srv=on`, `#sweep=<sweep id>`, `#run=<id>&tab=live&range=2-10`, and `#task=record` or `#task=replay` to open those workloads, `#set=path:value,...` to pre-fill settings (lists use `;`, for example `#set=target.uris:127.0.0.1:7001;127.0.0.1:7002`).
 
 ## Security
 
@@ -123,8 +125,10 @@ therefore refuses a non-loopback address unless you pass `-allow-remote`, answer
 to `localhost`, `127.0.0.1` or `[::1]` (so a web page on another domain cannot drive it through DNS
 rebinding), rejects requests that do not come from its own page (a different origin, or a body that is not
 JSON), and sends a strict Content-Security-Policy. If you expose it beyond your machine, put it behind your
-own access control and read `security-tls-acl.md`. Settings include an Advanced **Encryption (TLS)** card;
-recording is not available from the UI.
+own access control and read `security-tls-acl.md`. Settings include an Advanced **Encryption (TLS)** card.
+Recording and replay write and read files on the machine running `plgv web`: new recordings are named by the server
+inside `<data-dir>/recordings`, and a typed path is accepted only while the server listens on loopback
+([record-and-replay-web-ui.md](record-and-replay-web-ui.md#where-files-live-and-typed-paths)).
 
 Saved settings and stored runs never contain credentials.
 

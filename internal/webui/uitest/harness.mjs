@@ -25,6 +25,9 @@ export function defaultRoutes() {
     '/api/trends': fixture('trends.json'),
     '/api/sweeps/swtest': fixture('sweep_workers.json'),
     '/api/sweeps': fixture('sweeps.json'),
+    '/api/recordings': fixture('recordings.json'),
+    '/api/replays/20261104-110000': fixture('replay_stored.json'),
+    '/api/replays': fixture('replays.json'),
   };
 }
 
@@ -51,7 +54,8 @@ export async function loadPage(overrides = {}, { hash = '' } = {}) {
       window.confirm = () => true;
       window.fetchCalls = [];
       window.fetch = async (url, init = {}) => {
-        const call = { url: String(url), method: (init.method || 'GET').toUpperCase(), body: init.body ? JSON.parse(init.body) : undefined };
+        let sent; try { sent = init.body ? JSON.parse(init.body) : undefined; } catch (e) { sent = init.body; } // an upload is a file, not JSON
+        const call = { url: String(url), method: (init.method || 'GET').toUpperCase(), body: sent, headers: init.headers || {} };
         window.fetchCalls.push(call);
         const keys = Object.keys(routes).filter(k => call.url.startsWith(k)).sort((a, b) => b.length - a.length);
         if (!keys.length) return { ok: false, status: 404, json: async () => ({ error: 'no route ' + call.url }) };

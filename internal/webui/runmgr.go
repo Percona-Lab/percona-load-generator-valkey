@@ -83,6 +83,10 @@ type Live struct {
 	Sweep       *LiveSweep         `json:"sweep,omitempty"`
 	Workers     int                `json:"active_workers"`
 	Error       string             `json:"error,omitempty"`
+	// Kind is "replay" while a replay (or its result) is shown; empty for a workload run.
+	Kind     string      `json:"kind,omitempty"`
+	Replay   *LiveReplay `json:"replay,omitempty"`
+	ReplayID string      `json:"replay_id,omitempty"` // stored replay, once finished
 }
 
 // Manager owns the single active run.
@@ -100,6 +104,11 @@ type Manager struct {
 	cancel  context.CancelFunc
 	started time.Time
 	done    chan struct{}
+
+	replays     *ReplayStore
+	replayFn    ReplayFunc
+	keepReplays int
+	onRecording func(path string) // told the path of every recording a run wrote
 }
 
 // NewManager creates a manager that stores finished runs in hist.
@@ -107,7 +116,7 @@ func NewManager(hist *History, version string, keep int, run RunFunc) *Manager {
 	if run == nil {
 		run = session.Run
 	}
-	return &Manager{hist: hist, version: version, run: run, sweep: session.Sweep, keep: keep, live: Live{State: StateIdle}}
+	return &Manager{hist: hist, version: version, run: run, replayFn: session.ReplayManyWith, sweep: session.Sweep, keep: keep, live: Live{State: StateIdle}}
 }
 
 // Start begins a run in the background.
@@ -169,6 +178,9 @@ func (m *Manager) execute(ctx context.Context, cfg config.Config, label string) 
 	}
 	m.live.State, m.live.RunID = StateDone, id
 	m.poller = nil
+	if out.Recording != nil && m.onRecording != nil {
+		m.onRecording(out.Recording.Path)
+	}
 }
 
 // executeSweep runs every level of a sweep, storing each finished level as it ends.
@@ -279,6 +291,9 @@ func (m *Manager) Live() Live {
 		sw := *l.Sweep
 		sw.RunIDs = append([]string{}, sw.RunIDs...)
 		l.Sweep = &sw
+	}
+	if m.live.Replay != nil {
+		l.Replay = m.live.Replay.clone()
 	}
 	poller := m.poller
 	started := m.started

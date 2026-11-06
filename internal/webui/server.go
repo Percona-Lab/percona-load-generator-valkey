@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/config"
@@ -29,6 +30,7 @@ type Options struct {
 	KeepRuns int                 // runs to keep; 0 = keep all
 	Env      func(string) string // credentials come from here (PLGV_USERNAME, PLGV_PASSWORD, PLGV_URI)
 	Run      RunFunc             // tests only
+	Replay   ReplayFunc          // tests only
 	Shutdown func()              // called by POST /api/shutdown
 	// LoopbackOnly makes the server answer only requests addressed to localhost,
 	// 127.0.0.1 or [::1], which stops DNS rebinding (a web page on another domain
@@ -39,6 +41,10 @@ type Options struct {
 	// of these host names (no port) are answered. Use it with -allow-remote, for
 	// example behind a port published on 127.0.0.1 only.
 	AllowedHosts []string
+	// FreePaths lets a request name a file on this machine (a recording to
+	// replay or write, a capture to import). It is on unless the server accepts
+	// remote connections: the UI has no login, so a remote page must not choose files.
+	FreePaths bool
 }
 
 // Server is the web UI and API.
@@ -47,7 +53,11 @@ type Server struct {
 	hist     *History
 	settings *SettingsStore
 	mgr      *Manager
+	replays  *ReplayStore
 	mux      *http.ServeMux
+
+	mu         sync.Mutex
+	remembered []string // recordings written by runs, newest last
 }
 
 // New creates the server and its data directories.
@@ -63,7 +73,19 @@ func New(opt Options) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Server{opt: opt, hist: hist, settings: set, mgr: NewManager(hist, opt.Version, opt.KeepRuns, opt.Run), mux: http.NewServeMux()}
+	rs, err := NewReplayStore(filepath.Join(opt.DataDir, "replays"))
+	if err != nil {
+		return nil, err
+	}
+	if err := os.MkdirAll(filepath.Join(opt.DataDir, "recordings"), 0o700); err != nil {
+		return nil, err
+	}
+	s := &Server{opt: opt, hist: hist, settings: set, replays: rs, mgr: NewManager(hist, opt.Version, opt.KeepRuns, opt.Run), mux: http.NewServeMux()}
+	s.mgr.replays, s.mgr.keepReplays = rs, opt.KeepRuns
+	s.mgr.onRecording = s.rememberRecording
+	if opt.Replay != nil {
+		s.mgr.replayFn = opt.Replay
+	}
 	sub, _ := fs.Sub(staticFiles, "static")
 	s.mux.Handle("/", http.FileServer(http.FS(sub)))
 	s.mux.HandleFunc("/api/config", s.handleConfig)
@@ -81,6 +103,15 @@ func New(opt Options) (*Server, error) {
 	s.mux.HandleFunc("/api/settings", s.handleSettings)
 	s.mux.HandleFunc("/api/settings/", s.handleSettingItem)
 	s.mux.HandleFunc("/api/shutdown", s.handleShutdown)
+	s.mux.HandleFunc("/api/recordings", s.handleRecordings)
+	s.mux.HandleFunc("/api/recordings/info", s.handleRecordingInfo)
+	s.mux.HandleFunc("/api/recordings/delete", s.handleRecordingDelete)
+	s.mux.HandleFunc("/api/recordings/upload", s.handleRecordingUpload)
+	s.mux.HandleFunc("/api/import-traffic", s.handleImportTraffic)
+	s.mux.HandleFunc("/api/replay", s.handleReplayStart)
+	s.mux.HandleFunc("/api/replay/validate", s.handleReplayValidate)
+	s.mux.HandleFunc("/api/replays", s.handleReplays)
+	s.mux.HandleFunc("/api/replays/", s.handleReplayItem)
 	return s, nil
 }
 
@@ -112,7 +143,8 @@ func guard(next http.Handler, loopbackOnly bool, allowed []string) http.Handler 
 					return
 				}
 			}
-			if r.Method != http.MethodDelete && !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
+			upload := r.Method == http.MethodPut && r.URL.Path == "/api/recordings/upload" && r.Header.Get("Content-Type") == "application/octet-stream"
+			if r.Method != http.MethodDelete && !upload && !strings.HasPrefix(r.Header.Get("Content-Type"), "application/json") {
 				fail(w, http.StatusUnsupportedMediaType, "send application/json")
 				return
 			}
@@ -174,6 +206,7 @@ func (s *Server) readConfig(r *http.Request) (config.Config, string, error) {
 	if l, ok := all["label"].(string); ok {
 		body.Label = l
 	}
+	recordOn, _ := all["record"].(bool)
 	if body.Config == nil {
 		return config.Config{}, "", errors.New(`body must have a "config" object`)
 	}
@@ -181,8 +214,18 @@ func (s *Server) readConfig(r *http.Request) (config.Config, string, error) {
 	if err != nil {
 		return cfg, body.Label, err
 	}
-	if cfg.Record.Path != "" || cfg.Record.Outcomes || cfg.Record.Checksums {
-		return cfg, body.Label, errors.New("record: recording writes a file, so it is available from the command line only (plgv run -record)")
+	wantsRecord := cfg.Record.Path != "" || cfg.Record.Outcomes || cfg.Record.Checksums
+	switch {
+	case wantsRecord && !recordOn:
+		return cfg, body.Label, errors.New("record.path: tick Record this run to write a recording")
+	case recordOn && cfg.Record.Path == "":
+		cfg.Record.Path = s.newRecordingPath(strings.ToLower(strings.TrimSpace(cfg.Record.Compression)))
+	case recordOn:
+		abs, err := s.checkRecordPath(cfg.Record.Path)
+		if err != nil {
+			return cfg, body.Label, fmt.Errorf("record.path: %v", err)
+		}
+		cfg.Record.Path = abs
 	}
 	cfg.ApplyCredentialsEnv(s.opt.Env) // credentials come from the environment, never the form
 	if err := cfg.ResolveSecrets(s.opt.Env); err != nil {

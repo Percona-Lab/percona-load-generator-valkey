@@ -11,7 +11,7 @@ test('opens on the front page: a card per workload, and no section tabs yet', as
   assert.equal(doc.getElementById('mainTabs').hidden, true, 'the front page shows only the header and the cards');
   assert.match(doc.querySelector('#home h2').textContent, /What do you want to do/);
   const ids = sel => Array.from(doc.querySelectorAll(sel + ' [data-task]')).map(c => c.dataset.task);
-  assert.deepEqual(ids('#taskGrid'), ['standard', 'custom', 'raw', 'sweep']);
+  assert.deepEqual(ids('#taskGrid'), ['standard', 'custom', 'raw', 'sweep', 'record', 'replay']);
   assert.deepEqual(ids('#presetGrid'), ['preset:cache', 'preset:session', 'preset:leaderboard', 'preset:queue', 'preset:rate-limiter', 'preset:pubsub-fanout', 'preset:counters', 'preset:big-keys', 'preset:mixed']);
   for (const c of doc.querySelectorAll('.task-grid .task-card[data-task]')) {
     assert.ok(c.querySelector('strong').textContent && c.querySelector('.d').textContent, 'a title and a description');

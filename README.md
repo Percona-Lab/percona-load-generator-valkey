@@ -67,6 +67,7 @@ Every feature has its own page. Pages describe behavior that was run against a r
 | Page | Topic |
 |---|---|
 | [`docs/record-and-replay.md`](docs/record-and-replay.md) | Record a run's commands and replay them (pace, reads-only, outcomes, checksums, starting data) |
+| [`docs/record-and-replay-web-ui.md`](docs/record-and-replay-web-ui.md) | Record, replay and compare in the web UI, with screenshots |
 | [`docs/traffic-import.md`](docs/traffic-import.md) | Turn MONITOR or SLOWLOG traffic into a recording |
 | [`docs/multi-target.md`](docs/multi-target.md) | Replay one recording on several servers, sequentially or at once |
 | [`docs/replay-comparison.md`](docs/replay-comparison.md) | `plgv compare` and the Replay Comparison tab |

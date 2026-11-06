@@ -22,6 +22,7 @@ test('the Replay Comparison tab exists and starts empty', async () => {
   const { w, doc, calls, close } = await loadPage(ROUTE);
   assert.equal(q(doc, '#tab-replay').textContent, 'Replay Comparison');
   click(w, q(doc, '#tab-replay'));
+  await tick(20);
   assert.equal(q(doc, '#panel-replay').hidden, false);
   assert.match(q(doc, '#rpMsg').textContent, /Choose two or more replay summaries/);
   assert.equal(q(doc, '#rpBody').hidden, true);

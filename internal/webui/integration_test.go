@@ -277,3 +277,53 @@ func TestIntegrationWebPresetAndKeySpace(t *testing.T) {
 		t.Fatal("the report lacks the key-space section")
 	}
 }
+
+// Record a run through the web API, replay it on the same server through the
+// web API, and read the stored result: the whole feature against a real Valkey.
+func TestIntegrationWebRecordThenReplay(t *testing.T) {
+	addr := os.Getenv("PLGV_IT_VALKEY_ADDR")
+	if addr == "" {
+		addr = "127.0.0.1:6379"
+	}
+	s, err := New(Options{DataDir: t.TempDir(), Version: "it", FreePaths: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ts := httptest.NewServer(s.Handler())
+	defer ts.Close()
+	e := &env{t: t, srv: s, ts: ts}
+	cleanupKeys(t, addr, "it:webrec:")
+
+	body := e.defaultsBody(func(c map[string]any) {
+		c["target"].(map[string]any)["uris"] = []any{addr}
+		c["run"].(map[string]any)["duration"] = "2s"
+		c["run"].(map[string]any)["concurrency"] = 4
+		c["dataset"].(map[string]any)["key_count"] = 200
+		c["dataset"].(map[string]any)["key_prefix"] = "it:webrec:"
+		rec := c["record"].(map[string]any)
+		rec["compression"], rec["outcomes"], rec["backpressure"] = "zstd", true, "block"
+	})
+	body["record"] = true
+	if code, _, raw := e.do("POST", "/api/start", body, nil); code != 202 {
+		t.Fatalf("record: %d %s", code, raw)
+	}
+	done := e.waitStateFor(StateDone, 30*time.Second)
+	_, run, _ := e.do("GET", "/api/runs/"+done["run_id"].(string), nil, nil)
+	rec, _ := run["recording"].(map[string]any)
+	if rec == nil || rec["status"] != "complete" || rec["ops"].(float64) == 0 || !strings.HasSuffix(rec["name"].(string), ".plgvrec.zst") {
+		t.Fatalf("run recording = %v", rec)
+	}
+	recorded := rec["ops"].(float64)
+
+	rb := e.defaultsBody(func(c map[string]any) { c["target"].(map[string]any)["uris"] = []any{addr} })
+	rb["replay"] = map[string]any{"path": rec["name"], "speed": 0, "reads_only": true}
+	if code, _, raw := e.do("POST", "/api/replay", rb, nil); code != 202 {
+		t.Fatalf("replay: %d %s", code, raw)
+	}
+	fin := e.waitStateFor(StateDone, 30*time.Second)
+	_, got, raw := e.do("GET", "/api/replays/"+fin["replay_id"].(string), nil, nil)
+	ts0 := got["targets"].([]any)[0].(map[string]any)
+	if ts0["failure"] != nil || ts0["ops"].(float64) == 0 || ts0["ops"].(float64) > recorded {
+		t.Fatalf("replay = %s", raw)
+	}
+}

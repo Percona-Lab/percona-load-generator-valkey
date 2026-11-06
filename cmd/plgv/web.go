@@ -43,7 +43,7 @@ func webCmd(args []string, stdout, stderr io.Writer) int {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
-	srv, err := webui.New(webui.Options{DataDir: dataDir, Version: version, KeepRuns: keep, Shutdown: stop, LoopbackOnly: !allowRemote, AllowedHosts: splitAddrs(allowedHosts)})
+	srv, err := webui.New(webui.Options{DataDir: dataDir, Version: version, KeepRuns: keep, Shutdown: stop, LoopbackOnly: !allowRemote, FreePaths: !allowRemote, AllowedHosts: splitAddrs(allowedHosts)})
 	if err != nil {
 		fmt.Fprintln(stderr, "plgv web:", err)
 		return 1

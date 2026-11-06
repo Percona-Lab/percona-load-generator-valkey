@@ -1,0 +1,36 @@
+{
+  "checksums": false,
+  "commands": [
+    {
+      "command": "SET",
+      "ops": 3
+    }
+  ],
+  "commands_hash": "a2b16e299300d35573b1f9168a89162ea6e0131e993ca05262da4c4608e5c770",
+  "compression": "none",
+  "data_fingerprint": false,
+  "duration": "",
+  "entry": {
+    "compression": "none",
+    "created_at": "2026-11-04T10:00:00Z",
+    "modified_at": "2026-11-04T10:00:00Z",
+    "name": "rec-20261104T100000Z-a1b2c3.plgvrec",
+    "ops": 3,
+    "path": "/home/user/plgv-data/recordings/rec-20261104T100000Z-a1b2c3.plgvrec",
+    "plgv_version": "test",
+    "size_bytes": 1002,
+    "source": "folder",
+    "status": "complete",
+    "workers": 2
+  },
+  "file_bytes": 1002,
+  "groups": 3,
+  "import": null,
+  "mix": "",
+  "ops": 3,
+  "outcomes": false,
+  "reason": "",
+  "seed": 0,
+  "status": "complete",
+  "workers": 2
+}

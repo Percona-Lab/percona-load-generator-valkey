@@ -120,8 +120,14 @@ run summary instead.
 - refuses cross-site writes (an `Origin` that differs from the `Host`, or a body that is not JSON);
 - sends a Content-Security-Policy that allows only its own scripts and connections, forbids framing, and
   serves reports with a policy that runs no script at all;
-- refuses recording and anything else that writes a file chosen by a request, and only reads the TLS files
-  you named from the machine it runs on;
+- lets a request name a file on the machine only while it listens on loopback: a typed recording path, or a
+  capture to import. With `-allow-remote` typed paths are off, and recordings are chosen from a list or
+  uploaded. A recording is written to a new name inside `<data-dir>/recordings` unless you type a path, and a
+  typed path may only create a file or replace an earlier plgv recording, never overwrite another file. A file
+  that is read must be a regular file that starts like a plgv recording, and its content is never echoed. Uploads
+  are checked, size-limited and stored under a name the server chooses
+  ([record-and-replay-web-ui.md](record-and-replay-web-ui.md#where-files-live-and-typed-paths));
+- only reads the TLS files you named from the machine it runs on;
 - validates run ids and setting names, so no request can reach a file outside its data directory.
 
 If you expose it (a container, a shared host), put it behind a reverse proxy that authenticates users, and

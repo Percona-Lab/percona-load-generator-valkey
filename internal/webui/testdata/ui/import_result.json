@@ -1,0 +1,22 @@
+{
+  "commands": 3,
+  "entries": 4,
+  "format": "monitor",
+  "lines_not_commands": 0,
+  "recording": {
+    "compression": "zstd",
+    "created_at": "2026-11-04T10:00:00Z",
+    "imported": true,
+    "modified_at": "2026-11-04T10:00:00Z",
+    "name": "import-20261106T170642Z-123db7.plgvrec.zst",
+    "path": "/home/user/plgv-data/recordings/import-20261106T170642Z-123db7.plgvrec.zst",
+    "plgv_version": "vtest",
+    "size_bytes": 1024,
+    "source": "folder",
+    "workers": 2
+  },
+  "skipped": {
+    "carries credentials or changes access (AUTH, HELLO, MIGRATE, ACL)": 1
+  },
+  "workers": 2
+}

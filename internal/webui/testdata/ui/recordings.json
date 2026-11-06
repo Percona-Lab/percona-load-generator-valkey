@@ -1,0 +1,43 @@
+{
+  "dir": "/home/user/plgv-data/recordings",
+  "free_paths": true,
+  "recordings": [
+    {
+      "compression": "zstd",
+      "created_at": "2026-11-04T10:00:00Z",
+      "imported": true,
+      "modified_at": "2026-11-04T10:00:00Z",
+      "name": "import-20261106T170642Z-123db7.plgvrec.zst",
+      "path": "/home/user/plgv-data/recordings/import-20261106T170642Z-123db7.plgvrec.zst",
+      "plgv_version": "vtest",
+      "size_bytes": 1024,
+      "source": "folder",
+      "workers": 2
+    },
+    {
+      "compression": "zstd",
+      "created_at": "2026-11-04T10:00:00Z",
+      "modified_at": "2026-11-04T10:00:00Z",
+      "name": "rec-20261103T090000Z-d4e5f6.plgvrec.zst",
+      "path": "/home/user/plgv-data/recordings/rec-20261103T090000Z-d4e5f6.plgvrec.zst",
+      "plgv_version": "test",
+      "size_bytes": 586,
+      "source": "folder",
+      "workers": 2
+    },
+    {
+      "compression": "none",
+      "created_at": "2026-11-04T10:00:00Z",
+      "modified_at": "2026-11-04T10:00:00Z",
+      "name": "rec-20261104T100000Z-a1b2c3.plgvrec",
+      "ops": 3,
+      "path": "/home/user/plgv-data/recordings/rec-20261104T100000Z-a1b2c3.plgvrec",
+      "plgv_version": "test",
+      "size_bytes": 1002,
+      "source": "folder",
+      "status": "complete",
+      "workers": 2
+    }
+  ],
+  "truncated": false
+}
