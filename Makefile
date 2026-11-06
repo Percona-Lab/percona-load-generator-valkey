@@ -126,6 +126,17 @@ valkey-down:
 valkey-cluster-up:
 	$(COMPOSE) --profile cluster up -d valkey-c1 valkey-c2 valkey-c3 valkey-c4 valkey-c5 valkey-c6
 	$(COMPOSE) --profile cluster run --rm valkey-cluster-init
+	@# Wait until every node agrees the cluster is ok and each replica is synced.
+	@for i in $$(seq 1 60); do \
+	  ok=0; \
+	  for p in 7001 7002 7003 7004 7005 7006; do \
+	    info=$$(docker exec plgv-valkey-c1 valkey-cli -p $$p cluster info 2>/dev/null); \
+	    echo "$$info" | grep -q 'cluster_state:ok' && echo "$$info" | grep -q 'cluster_known_nodes:6' && ok=$$((ok+1)); \
+	    rep=$$(docker exec plgv-valkey-c1 valkey-cli -p $$p info replication 2>/dev/null); \
+	    if echo "$$rep" | grep -q 'role:slave'; then echo "$$rep" | grep -q 'master_link_status:up' && ok=$$((ok+1)) || true; else ok=$$((ok+1)); fi; \
+	  done; \
+	  [ $$ok -eq 12 ] && break; sleep 1; \
+	done; [ $$ok -eq 12 ] || { echo "cluster did not become ready"; exit 1; }
 	@echo "Valkey cluster: 127.0.0.1:7001-7006"
 
 valkey-cluster-down:

@@ -20,7 +20,7 @@ Each holds the static binary (`CGO_ENABLED=0`, no runtime dependencies), `LICENS
 
 ```sh
 sha256sum -c --ignore-missing SHA256SUMS      # macOS: shasum -a 256 -c SHA256SUMS
-tar -xzf plgv-1.0.0-linux-amd64.tar.gz && ./plgv-1.0.0-linux-amd64/plgv version
+tar -xzf plgv-v0.0.1-linux-amd64.tar.gz && ./plgv-v0.0.1-linux-amd64/plgv version
 ```
 
 Build them yourself with `make dist` (needs Go 1.25); `make build-local` builds `bin/plgv` for this machine.
@@ -29,7 +29,7 @@ The version comes from `git describe` and is printed by `plgv version`.
 ## Docker
 
 ```sh
-make docker-build                                   # or: docker build -t plgv --build-arg VERSION=1.0.0 .
+make docker-build                                   # or: docker build -t plgv --build-arg VERSION=v0.0.1 .
 docker run --rm plgv run -addr valkey.internal:6379 -preset cache -duration 60s
 ```
 
