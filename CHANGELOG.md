@@ -5,6 +5,13 @@ For each new release, add a new `## vX.Y.Z` section at the top. The release work
 
 ---
 
+## v0.0.2 - Clearer per-operation latency
+
+**Improved**
+- When every operation shows almost the same latency (normal when the server is kept busy, because requests mostly wait in line), `plgv run` now prints a short note under the per-operation table. The Web UI shows the same explanation on Live Metrics and Latency Analysis, and `docs/performance-tuning.md` has a new section on it. The measured numbers are unchanged.
+
+---
+
 ## v0.0.1 - First release: a Valkey load generator with a web UI
 
 Percona Load Generator for Valkey (`plgv`) generates realistic load against Valkey, measures it, and shows the result in a web UI or a report. It works with standalone servers, Valkey Cluster and Sentinel, and uses RESP2 and RESP3 with core Valkey commands only (no modules).
