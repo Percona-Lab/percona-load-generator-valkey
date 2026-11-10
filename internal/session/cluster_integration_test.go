@@ -326,3 +326,29 @@ func TestClusterForcedFailoverDuringARun(t *testing.T) {
 		t.Error("no client operations were attributed to the new primary 7004")
 	}
 }
+
+// Every node of the cluster is read; ports differ but are not reported as a
+// difference between nodes.
+func TestClusterServerConfigReadsEveryNode(t *testing.T) {
+	cfg := config.Default()
+	cfg.Target.URIs = []string{clusterAddr()}
+	cfg.Target.Mode = "cluster"
+	cfg.Run.Duration = time.Second
+	cfg.Run.Concurrency = 4
+	cfg.Dataset.KeyCount = 200
+	cfg.Dataset.KeyPrefix = "{itsc}:"
+	cfg.SrvConf = config.ServerConfig{Enabled: true}
+	out, err := Run(context.Background(), cfg, Options{}, Hooks{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sc := out.Summary.ServerConfig
+	if sc == nil || sc.Status != "ok" || len(sc.Nodes) < 6 {
+		t.Fatalf("server config: %+v", sc)
+	}
+	for _, k := range sc.Differ {
+		if k == "port" {
+			t.Error("port is expected to differ and must not be reported")
+		}
+	}
+}

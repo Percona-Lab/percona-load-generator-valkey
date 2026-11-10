@@ -208,3 +208,16 @@ test('Slowlog tab shows at most 100 entries and says how many there were', async
   assert.match(trs[100].textContent, /first 100 of 250 stored entries \(900 slow commands in total\)/);
   close();
 });
+
+test('opening an older run shows its own length on the clock, not the last run\'s planned length', async () => {
+  const live = clone(fixture('live_idle.json'));
+  live.state = 'done'; live.duration_seconds = 4; live.elapsed_seconds = 4;
+  const run = fixture('run_a.json');
+  const { w, doc, close } = await loadPage({ '/api/live': live }, { hash: '#run=20261104-100000&tab=live' });
+  await w.pollLive();
+  await tick(30);
+  const mm = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(Math.round(s % 60)).padStart(2, '0');
+  const len = mm(run.client.elapsed_seconds);
+  assert.equal(doc.getElementById('runClock').textContent, `${len} / ${len}`);
+  close();
+});

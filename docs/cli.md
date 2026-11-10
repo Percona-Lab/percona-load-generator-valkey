@@ -51,6 +51,8 @@ replaces the defaults (see `configuration-reference.md`), and any flags you pass
 | `-prefix` | `dataset.key_prefix` | Key prefix. |
 | `-seed` | `run.seed` | Random seed; 0 picks one and prints it. |
 | `-preload=false` | `dataset.preload` | Skip writing the dataset first. |
+| `-server-config` | `server_config.enabled` | Record the server's settings (`CONFIG GET *`) before and after the run (read-only). See `server-config.md`. |
+| `-server-config-name` | `server_config.name` | A label for this server setup, stored with the run. Turns `-server-config` on. |
 | `-server-metrics` | `server_metrics.enabled` | Poll `INFO`, `SLOWLOG` and `LATENCY` and report server stats and findings (read-only). |
 | `-target-ops` | `run.target_ops_per_sec` | Pace the run to this total rate (0 = as fast as possible). |
 | `-loop` | `run.loop` | `closed` (default) or `open`: an open loop sends at `-target-ops` whether or not the server keeps up. |

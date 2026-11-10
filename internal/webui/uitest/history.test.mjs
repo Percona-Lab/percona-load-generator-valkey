@@ -90,7 +90,7 @@ test('Compare Runs shows the metric table with better/worse verdicts', async () 
     assert.equal(verdict.className, m.better === 'same' ? '' : m.better === 'b' ? 'better' : 'worse');
   }
   assert.equal(doc.querySelector('#cmpBody .banner.warn'), null, 'comparable runs get no warning');
-  assert.deepEqual(w.chartLog.filter(c => c.canvas.id.startsWith('ch-cmp')).map(c => c.canvas.id).sort(), ['ch-cmp-ops', 'ch-cmp-p99']);
+  assert.deepEqual(w.chartLog.filter(c => c.canvas.id.startsWith('cmp')).map(c => c.canvas.id).sort(), ['cmpLatencyChart', 'cmpTailChart', 'cmpThroughputChart']);
   assert.match(text(doc, '#cmpBody'), /By operation/);
   close();
 });
@@ -107,16 +107,10 @@ test('Compare Runs warns when the workloads differ and lists the setting differe
   close();
 });
 
-test('Compare rejects the same run twice and surfaces API errors', async () => {
-  const { w, doc, close } = await loadPage({ '/api/compare': { status: 404, body: { error: 'run not found' } } }, { hash: '#tab=compare' });
-  await tick(30);
-  setValue(w, doc.getElementById('cmpB'), doc.getElementById('cmpA').value);
-  click(w, doc.getElementById('cmpGo'));
-  await tick(20);
-  assert.match(text(doc, '#cmpMsg'), /two different runs/);
-  setValue(w, doc.getElementById('cmpB'), IDS[1]);
-  click(w, doc.getElementById('cmpGo'));
-  await tick(30);
+test('Compare Runs surfaces an API error from the two-run details', async () => {
+  const { doc, close } = await loadPage({ '/api/compare': { status: 404, body: { error: 'run not found' } } }, { hash: `#compare=${IDS[0]},${IDS[1]}` });
+  await tick(40);
+  assert.equal(doc.getElementById('cmpMsg').hidden, false);
   assert.match(text(doc, '#cmpMsg'), /run not found/);
   close();
 });

@@ -28,6 +28,7 @@
         "total": 4,
         "value": 32
       },
+      "target": "127.0.0.1:6379",
       "target_mode": "standalone",
       "warnings": 0
     },
@@ -59,6 +60,7 @@
         "total": 4,
         "value": 16
       },
+      "target": "127.0.0.1:6379",
       "target_mode": "standalone",
       "warnings": 0
     },
@@ -90,6 +92,7 @@
         "total": 4,
         "value": 8
       },
+      "target": "127.0.0.1:6379",
       "target_mode": "standalone",
       "warnings": 0
     },
@@ -121,6 +124,7 @@
         "total": 4,
         "value": 4
       },
+      "target": "127.0.0.1:6379",
       "target_mode": "standalone",
       "warnings": 0
     }

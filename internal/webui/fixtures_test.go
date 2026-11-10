@@ -13,6 +13,7 @@ import (
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/keyscan"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/latency"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/runsummary"
+	"github.com/Percona-Lab/percona-load-generator-valkey/internal/serverconfig"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/servermetrics"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/stats"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/valkey"
@@ -96,6 +97,8 @@ func TestUIFixturesMatchAPI(t *testing.T) {
 	got["compare_same.json"] = []byte(raw)
 	_, _, raw = e.do("GET", "/api/compare?a="+ids[0]+"&b="+ids[3], nil, nil)
 	got["compare_different.json"] = []byte(raw)
+	_, _, raw = e.do("GET", "/api/compare-settings?ids="+ids[0]+","+ids[3], nil, nil)
+	got["compare_settings.json"] = []byte(raw)
 	_, _, raw = e.do("GET", "/api/trends", nil, nil)
 	got["trends.json"] = []byte(raw)
 	got["live_running.json"] = pretty(Live{State: StateRunning, Label: "cache baseline", StartedAt: base, ElapsedSec: 3, DurationSec: 10, ServerOn: true,
@@ -166,6 +169,20 @@ func TestUIFixturesMatchAPI(t *testing.T) {
 	}
 	_, _, raw = ke.do("GET", "/api/runs/20261104-220000", nil, nil)
 	got["run_keyspace.json"] = []byte(raw)
+	// A run that recorded the server's settings: two nodes that differ in one setting.
+	scsum, _ := runsummary.BuildWith("test", kcfg, clusterResult("cluster"), nil, nil, base.Add(13*time.Hour))
+	scsum.Label = "io-threads test"
+	scsum.ServerConfig = &serverconfig.Snapshot{Name: "valkey-9.1-io4", Status: serverconfig.StatusOK, Differ: []string{"maxmemory"},
+		Nodes: []serverconfig.Node{
+			{Addr: "127.0.0.1:7001", Status: serverconfig.StatusOK, Settings: map[string]string{"io-threads": "4", "maxmemory": "0", "appendonly": "no", "requirepass": "***", "hz": "10"},
+				Changed: []serverconfig.Change{{Key: "hz", Before: "10", After: "20"}}},
+			{Addr: "127.0.0.1:7002", Status: serverconfig.StatusOK, Settings: map[string]string{"io-threads": "4", "maxmemory": "1073741824", "appendonly": "no", "requirepass": "***", "hz": "10"}}}}
+	sce := setup(t, nil)
+	if _, err := sce.srv.hist.Save(scsum); err != nil {
+		t.Fatal(err)
+	}
+	_, _, raw = sce.do("GET", "/api/runs/20261104-230000", nil, nil)
+	got["run_srvconfig.json"] = []byte(raw)
 	_, _, raw = ce.do("GET", "/api/runs", nil, nil)
 	got["runs_cluster.json"] = []byte(raw)
 	_, _, raw = ce.do("GET", "/api/runs/20261104-200000", nil, nil)

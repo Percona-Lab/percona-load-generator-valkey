@@ -83,6 +83,7 @@ func (c Config) Fingerprint() string {
 	c.Run.Sweep = Sweep{Kind: "none", Values: []float64{}}
 	c.Output = Output{}
 	c.Server = ServerMetrics{}
+	c.SrvConf = ServerConfig{}
 	c.KeySpace = KeySpace{}
 	c.Record = Record{}
 	c.Target.Username, c.Target.Password = "", ""

@@ -9,10 +9,12 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/runsummary"
+	"github.com/Percona-Lab/percona-load-generator-valkey/internal/serverconfig"
 )
 
 var idRe = regexp.MustCompile(`^[0-9]{8}-[0-9]{6}(-[0-9]+)?$`)
@@ -46,6 +48,12 @@ type Meta struct {
 	Mode        string                `json:"target_mode"`
 	Workers     int                   `json:"peak_workers"`
 	Sweep       *runsummary.SweepInfo `json:"sweep,omitempty"`
+	// Target is the server address the run used (host and port, no credentials).
+	Target string `json:"target,omitempty"`
+	// ServerSetup is the user's name for the server setup (server_config.name); empty if none.
+	ServerSetup string `json:"server_setup,omitempty"`
+	// ServerConfigOn is true when the run recorded the server's settings.
+	ServerConfigOn bool `json:"server_config,omitempty"`
 }
 
 func metaOf(id string, s *runsummary.Summary) Meta {
@@ -56,10 +64,14 @@ func metaOf(id string, s *runsummary.Summary) Meta {
 		Fingerprint: s.Fingerprint, Mix: mixSummary(s),
 		P95Ms: s.Client.P95Ms, Dropped: s.Client.DroppedOps, Loop: s.Client.Loop, Mode: s.Client.TargetMode, Workers: s.Client.PeakWorkers, Sweep: s.Sweep,
 	}
+	if sc := s.ServerConfig; sc != nil {
+		m.ServerSetup, m.ServerConfigOn = sc.Name, sc.Status == serverconfig.StatusOK
+	}
 	if s.Server != nil {
 		m.HitRatio = s.Server.HitRatio
 		m.ServerVer = s.Server.Version
 	}
+	m.Target = targetOf(s.ConfigYAML)
 	for _, f := range s.Findings {
 		switch f.Severity {
 		case "critical":
@@ -226,4 +238,20 @@ func mixSummary(s *runsummary.Summary) string {
 func jsonBytes(v any) []byte {
 	b, _ := json.Marshal(v)
 	return b
+}
+
+// targetOf returns the first server address of a run's configuration as host
+// and port: no scheme, user name, password or path.
+func targetOf(configYAML string) string {
+	u := flatten(configYAML)["target.uris[0]"]
+	if i := strings.Index(u, "://"); i >= 0 {
+		u = u[i+3:]
+	}
+	if i := strings.LastIndex(u, "@"); i >= 0 {
+		u = u[i+1:]
+	}
+	if i := strings.IndexAny(u, "/?"); i >= 0 {
+		u = u[:i]
+	}
+	return u
 }

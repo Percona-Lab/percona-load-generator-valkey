@@ -122,3 +122,32 @@ func TestIntegrationRampProfileGrowsConcurrency(t *testing.T) {
 		t.Fatal("the summary must carry the profile and the active worker series")
 	}
 }
+
+// The server's settings are recorded with the run when asked, with secrets
+// masked and the label kept; and not recorded when off.
+func TestIntegrationServerConfigRecorded(t *testing.T) {
+	cfg := itCfg(t, "it:srvcfg:")
+	cfg.SrvConf = config.ServerConfig{Enabled: true, Name: "it-setup"}
+	out, err := Run(context.Background(), cfg, Options{}, Hooks{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sc := out.Summary.ServerConfig
+	if sc == nil || sc.Status != "ok" || sc.Name != "it-setup" || len(sc.Nodes) != 1 {
+		t.Fatalf("server config: %+v", sc)
+	}
+	n := sc.Nodes[0]
+	if _, ok := n.Settings["maxmemory"]; !ok || len(n.Settings) < 50 {
+		t.Errorf("expected the full CONFIG GET * reply, got %d settings", len(n.Settings))
+	}
+	for k, v := range n.Settings {
+		if v != "" && (k == "requirepass" || k == "masterauth") && v != "***" {
+			t.Errorf("%s was not masked", k)
+		}
+	}
+	cfg.SrvConf = config.ServerConfig{}
+	out, err = Run(context.Background(), cfg, Options{}, Hooks{})
+	if err != nil || out.Summary.ServerConfig != nil {
+		t.Fatalf("default off: %v %+v", err, out.Summary.ServerConfig)
+	}
+}

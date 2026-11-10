@@ -96,6 +96,7 @@ func New(opt Options) (*Server, error) {
 	s.mux.HandleFunc("/api/runs", s.handleRuns)
 	s.mux.HandleFunc("/api/runs/", s.handleRunItem)
 	s.mux.HandleFunc("/api/compare", s.handleCompare)
+	s.mux.HandleFunc("/api/compare-settings", s.handleCompareSettings)
 	s.mux.HandleFunc("/api/replay-compare", s.handleReplayCompare)
 	s.mux.HandleFunc("/api/sweeps", s.handleSweeps)
 	s.mux.HandleFunc("/api/sweeps/", s.handleSweepItem)
@@ -395,6 +396,25 @@ func (s *Server) handleCompare(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, 200, Compare(metaOf(a, sa), metaOf(b, sb), sa, sb))
+}
+
+// handleCompareSettings lists the settings that differ between two or more stored runs.
+func (s *Server) handleCompareSettings(w http.ResponseWriter, r *http.Request) {
+	ids := strings.Split(r.URL.Query().Get("ids"), ",")
+	if len(ids) < 2 || len(ids) > 8 {
+		fail(w, 400, "give 2 to 8 run ids: ?ids=a,b,c")
+		return
+	}
+	yamls := make([]string, len(ids))
+	for i, id := range ids {
+		sum, err := s.hist.Get(id)
+		if err != nil {
+			notFoundOr500(w, err)
+			return
+		}
+		yamls[i] = sum.ConfigYAML
+	}
+	writeJSON(w, 200, map[string]any{"runs": ids, "diffs": diffConfigMany(yamls)})
 }
 
 func (s *Server) handleSweeps(w http.ResponseWriter, r *http.Request) {

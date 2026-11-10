@@ -17,6 +17,7 @@ import (
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/keyscan"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/loadprofile"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/runsummary"
+	"github.com/Percona-Lab/percona-load-generator-valkey/internal/serverconfig"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/servermetrics"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/stats"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/topology"
@@ -152,6 +153,12 @@ func Run(ctx context.Context, cfg config.Config, opt Options, h Hooks) (*Outcome
 		close(pollDone)
 	}
 
+	var srvCfg *serverconfig.Reader
+	if cfg.SrvConf.Enabled {
+		srvCfg = serverconfig.ForClient(c, mode == "cluster", firstAddr(addrs), cfg.SrvConf.Name)
+		srvCfg.Start(ctx)
+	}
+
 	var rec *workloadrec.Recorder
 	ropt := valkey.RunOptions{OnSample: h.OnSample, Router: router}
 	if cfg.Record.Path != "" {
@@ -192,6 +199,12 @@ func Run(ctx context.Context, cfg config.Config, opt Options, h Hooks) (*Outcome
 	}
 	sum, found := runsummary.BuildWith(opt.Version, cfg, res, srv, ks, startedAt)
 	sum.Label = opt.Label
+	if srvCfg != nil {
+		// A fresh context: the run may have been stopped, but the read is still wanted.
+		fctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		sum.ServerConfig = srvCfg.Finish(fctx)
+		cancel()
+	}
 	sum.Stopped = ctx.Err() != nil
 	if recRes != nil {
 		sum.Recording = &runsummary.RecordingOut{Path: recRes.Path, Name: filepath.Base(recRes.Path), Status: recRes.Status, Reason: recRes.Reason,
@@ -475,6 +488,13 @@ func tlsHint(tlsOn bool, err error) string {
 		return " (the server may require TLS: try -tls or a valkeys:// address)"
 	case tlsOn && (strings.Contains(msg, "first record does not look like a TLS handshake") || strings.Contains(msg, "deadline exceeded")):
 		return " (the server does not speak TLS on this port: remove -tls or use the server's TLS port)"
+	}
+	return ""
+}
+
+func firstAddr(addrs []string) string {
+	if len(addrs) > 0 {
+		return addrs[0]
 	}
 	return ""
 }

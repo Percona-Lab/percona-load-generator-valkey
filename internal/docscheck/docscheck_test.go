@@ -114,3 +114,22 @@ func TestPagesNamedInBackticksExist(t *testing.T) {
 		}
 	}
 }
+
+// A screenshot that no page shows is stale by definition: nobody sees it, so
+// nobody notices when the UI moves on. Delete it, or show it.
+func TestEveryImageIsShown(t *testing.T) {
+	var all strings.Builder
+	for _, f := range markdownFiles(t) {
+		b, _ := os.ReadFile(f)
+		all.Write(b)
+	}
+	used := all.String()
+	for _, ext := range []string{"png", "jpg", "jpeg", "gif", "svg"} {
+		imgs, _ := filepath.Glob(filepath.Join(root, "images", "*."+ext))
+		for _, img := range imgs {
+			if !strings.Contains(used, "images/"+filepath.Base(img)) {
+				t.Errorf("%s is not shown on any page; delete it or add it to the docs", rel(img))
+			}
+		}
+	}
+}

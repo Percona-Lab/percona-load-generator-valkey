@@ -8,7 +8,8 @@ Every finished run, including one you stop early, is saved to `<data-dir>/runs/`
 ![Run History](../images/web_history.png)
 
 Each row shows the run's name (its label, or its id), the operation mix, when it started, its duration,
-throughput, p99, errors and finding chips. The chips say `clean`, `client only`, or give counts of warnings and
+throughput, p99, errors, finding chips and the **Server setup** name, if the run recorded the server's settings
+([server-config.md](server-config.md)). Once any run has a setup name, a **Server setup** list above the table filters the runs by it. The chips say `clean`, `client only`, or give counts of warnings and
 critical findings. A run that ended early is marked `stopped`.
 
 | Action | What it does |

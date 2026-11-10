@@ -121,8 +121,10 @@ sweep results:
 
 ### Read the results
 
-Open **Compare Runs**, then **Sweep results**, and pick the sweep. You can also click **Compare this sweep**
-after a run, or **Compare sweep** on a row in Run History.
+Open **Compare Runs**. The sweep results are in the card at the top. Pick the sweep in the **Sweep** list if there
+is more than one, and click **Show on charts** to draw its runs on the charts. You can also click **Compare this
+sweep** after a run, or **Compare sweep** on a row in Run History. Opening a sweep this way ticks all of its runs,
+so they are drawn on the three charts under the card (throughput, latency and tail latency).
 
 ![Sweep results by worker count](../images/web_sweep_results.png)
 
@@ -132,7 +134,9 @@ after a run, or **Compare sweep** on a row in Run History.
   - **Served** (rate sweep) is the achieved throughput divided by the target rate, plus a **Dropped** column
     for open-loop runs.
   - The row with the highest throughput is highlighted, and **Open run** opens that level.
-- The **charts** show throughput and latency against the level.
+- The **figures** for a worker sweep are **Throughput by worker count** (bars, with the gain over the previous
+  level) and **Throughput and p95 latency** (lines). The shaded area, "More workers stop helping", starts at the
+  first level that gained less than 5%. A rate sweep shows throughput and latency charts against the target rate.
 - The **notes** say in plain language what the numbers show:
 
 | Note | When it appears |

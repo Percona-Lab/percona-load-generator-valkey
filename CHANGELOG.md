@@ -5,6 +5,18 @@ For each new release, add a new `## vX.Y.Z` section at the top. The release work
 
 ---
 
+## v0.0.3 - Compare many runs, and record the server setup
+
+**New: Server configuration per run**
+- `-server-config` (and a Web UI checkbox) saves the settings the server ran with (`CONFIG GET *`, read-only) at the start and end of a run; `-server-config-name` adds your own label for the setup. Passwords are hidden. The Server tab shows the settings, Run History shows and filters by the setup name, and Compare Runs lists the server settings that differ. A server that blocks `CONFIG` does not fail the run. See `docs/server-config.md`.
+
+**Improved**
+- Web UI: **Compare Runs** now works like the one in plgm. Tick any runs (up to 8) to draw them on the same throughput, latency and tail latency (p99 or p95) charts, with a different color and line style per run, the run named at the end of its line, and minutes since each run started on the x-axis. A running workload is drawn as a growing line against the finished runs. "Settings that differ" lists what changed between the drawn runs. The metric table, per-operation numbers and findings stay below the charts when two runs are drawn. Sweep results moved into this tab, with two figures for a worker sweep and a **Show on charts** button. Latency in the overlay is the median.
+- Web UI: "No sweeps yet" was shown on Compare Runs even when sweeps existed; the header clock showed the last run's planned length when you opened an older run; the Server configuration list is now a scrolling box. 
+- Web UI: number column headers now line up with their values in every table (Live Metrics and Latency Analysis per-operation tables, Run History, Server nodes, Compare Runs). 
+
+---
+
 ## v0.0.2 - Clearer per-operation latency
 
 **Improved**

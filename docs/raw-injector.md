@@ -3,7 +3,7 @@
 You can run your own Valkey commands as the workload. They're mixed by weight, rate-limited and measured like
 any other operation, and they show up in the results under their own text.
 
-![Pub/Sub and raw command settings](../images/web_raw_injector.png)
+![The Raw commands card in the settings](../images/web_raw_injector.png)
 
 ## Writing commands
 

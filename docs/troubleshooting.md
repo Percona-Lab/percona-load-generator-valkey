@@ -29,6 +29,7 @@ Find the message you're seeing, then read the cause next to it. The messages are
 | `start data: DIFFERENT` | Preload the target with the recording's settings and seed (`plgv run -preload-only`). The server should hold only that data. |
 | Replay "fell behind the recording" | The target can't keep up with the recorded pace. Use `-speed 0` to compare capacity instead. |
 | `deterministic` run rejected | Remove `PUBLISH`, `XCONSUME`, `WATCH_INCR` or `{now}` from the workload (`deterministic-mode.md`). |
+| Server settings "not recorded" | The server blocks `CONFIG GET` or the user has no permission. The run is fine. Allow `CONFIG GET` for the user, or leave `server_config` off (`server-config.md`). |
 | Fingerprint differs between two runs | The two runs differ in seed, budget, workers, mix, dataset or (with composite operations) pipeline depth. |
 
 ## Recording and import

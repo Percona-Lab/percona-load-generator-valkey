@@ -17,6 +17,7 @@ import (
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/insights"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/keyscan"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/rawcmd"
+	"github.com/Percona-Lab/percona-load-generator-valkey/internal/serverconfig"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/servermetrics"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/session"
 	sweepapi "github.com/Percona-Lab/percona-load-generator-valkey/internal/sweep"
@@ -67,6 +68,8 @@ func runCmd(args []string, stdout, stderr io.Writer) int {
 		duration              time.Duration
 		prefix, summaryFile   string
 		preload, srvMetrics   bool
+		srvConfig             bool
+		srvConfigName         string
 		keyspace              bool
 		keyspaceSamples       int
 		targetOps             float64
@@ -107,6 +110,8 @@ func runCmd(args []string, stdout, stderr io.Writer) int {
 	fs.BoolVar(&keyspace, "keyspace", false, "after the run, sample the key space: types, sizes, expiry and the biggest keys (read-only)")
 	fs.IntVar(&keyspaceSamples, "keyspace-samples", 0, "keys to inspect for -keyspace (default 10000)")
 	fs.BoolVar(&srvMetrics, "server-metrics", false, "poll INFO, SLOWLOG and LATENCY from the server and report them (read-only)")
+	fs.BoolVar(&srvConfig, "server-config", false, "record the server's settings (CONFIG GET *) at the start and end of the run (read-only)")
+	fs.StringVar(&srvConfigName, "server-config-name", "", "a label for this server setup, stored with the run (implies -server-config)")
 	fs.Float64Var(&targetOps, "target-ops", 0, "pace the run to this many ops/s in total (0 = as fast as possible)")
 	fs.BoolVar(&co, "co", false, "measure latency from each batch's intended start (needs -target-ops)")
 	fs.DurationVar(&sampleEvery, "sample-interval", 0, "time-series slice length (default 1s)")
@@ -215,6 +220,12 @@ func runCmd(args []string, stdout, stderr io.Writer) int {
 		}
 		if set["server-metrics"] {
 			c.Server.Enabled = srvMetrics
+		}
+		if set["server-config"] {
+			c.SrvConf.Enabled = srvConfig
+		}
+		if srvConfigName != "" {
+			c.SrvConf.Name, c.SrvConf.Enabled = srvConfigName, true
 		}
 		if set["keyspace"] {
 			c.KeySpace.Enabled = keyspace
@@ -379,6 +390,7 @@ func execute(cfg config.Config, stdout, stderr io.Writer) int {
 	}
 	printResult(stdout, out.Result)
 	printServer(stdout, out.Server, out.Result)
+	printServerConfig(stdout, out.Summary.ServerConfig)
 	printKeySpace(stdout, out.Summary.KeySpace)
 	printRecording(stdout, out.Recording)
 	printFindings(stdout, out.Findings)
@@ -680,6 +692,54 @@ func printServer(w io.Writer, s *servermetrics.Summary, r *valkey.RunResult) {
 			fmt.Fprintf(w, "  topology: at %.0fs %s: %s\n", e.Offset.Seconds(), e.Kind, e.Detail)
 		}
 	}
+}
+
+// keySettings are shown in the terminal; the full list is in the run summary.
+var keySettings = []string{"maxmemory", "maxmemory-policy", "io-threads", "appendonly", "save", "hz", "maxclients"}
+
+func printServerConfig(w io.Writer, sc *serverconfig.Snapshot) {
+	if sc == nil {
+		return
+	}
+	title := "server config"
+	if sc.Name != "" {
+		title += " (" + sc.Name + ")"
+	}
+	fmt.Fprintln(w, "\n"+title+":")
+	if sc.Status != serverconfig.StatusOK {
+		why := "the server could not be read"
+		if sc.Status == serverconfig.StatusNotPermitted {
+			why = "the server does not allow CONFIG GET (blocked or no permission)"
+		}
+		fmt.Fprintf(w, "  not recorded: %s. The run itself was not affected.\n", why)
+		for _, n := range sc.Nodes {
+			if n.Error != "" {
+				fmt.Fprintf(w, "  %s: %s\n", n.Addr, n.Error)
+				break
+			}
+		}
+		return
+	}
+	for _, n := range sc.Nodes {
+		if n.Status != serverconfig.StatusOK {
+			fmt.Fprintf(w, "  %s: not recorded (%s)\n", n.Addr, n.Status)
+			continue
+		}
+		var parts []string
+		for _, k := range keySettings {
+			if v, ok := n.Settings[k]; ok {
+				parts = append(parts, fmt.Sprintf("%s=%q", k, v))
+			}
+		}
+		fmt.Fprintf(w, "  %s: %d settings read; %s\n", n.Addr, len(n.Settings), strings.Join(parts, " "))
+		for _, c := range n.Changed {
+			fmt.Fprintf(w, "    changed during the run: %s %q -> %q\n", c.Key, c.Before, c.After)
+		}
+	}
+	if len(sc.Differ) > 0 {
+		fmt.Fprintf(w, "  differs between nodes: %s\n", strings.Join(sc.Differ, ", "))
+	}
+	fmt.Fprintln(w, "  (all settings are in the run summary; secrets are masked)")
 }
 
 func printFindings(w io.Writer, found []insights.Finding) {

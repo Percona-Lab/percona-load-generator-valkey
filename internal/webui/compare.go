@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/runsummary"
+	"github.com/Percona-Lab/percona-load-generator-valkey/internal/serverconfig"
 	"gopkg.in/yaml.v3"
 )
 
@@ -40,14 +41,18 @@ type ConfigDiff struct {
 // Comparison is the result of comparing run A with run B.
 type Comparison struct {
 	A, B        Meta
-	Comparable  bool               `json:"comparable"` // same workload fingerprint
-	Metrics     []MetricRow        `json:"metrics"`
-	PerOp       []OpRow            `json:"per_op"`
-	ConfigDiffs []ConfigDiff       `json:"config_diffs"`
-	OnlyInA     []string           `json:"findings_only_in_a"`
-	OnlyInB     []string           `json:"findings_only_in_b"`
-	SeriesA     []runsummary.Point `json:"series_a"`
-	SeriesB     []runsummary.Point `json:"series_b"`
+	Comparable  bool         `json:"comparable"` // same workload fingerprint
+	Metrics     []MetricRow  `json:"metrics"`
+	PerOp       []OpRow      `json:"per_op"`
+	ConfigDiffs []ConfigDiff `json:"config_diffs"`
+	// ServerConfigDiffs lists the server settings that differ between the runs;
+	// ServerConfigNote says why there is no list (a run did not record them).
+	ServerConfigDiffs []serverconfig.Diff `json:"server_config_diffs"`
+	ServerConfigNote  string              `json:"server_config_note,omitempty"`
+	OnlyInA           []string            `json:"findings_only_in_a"`
+	OnlyInB           []string            `json:"findings_only_in_b"`
+	SeriesA           []runsummary.Point  `json:"series_a"`
+	SeriesB           []runsummary.Point  `json:"series_b"`
 }
 
 const sameTolerance = 0.02 // under 2% apart counts as the same
@@ -116,6 +121,18 @@ func Compare(am, bm Meta, a, b *runsummary.Summary) Comparison {
 	}
 
 	c.ConfigDiffs = diffConfig(a.ConfigYAML, b.ConfigYAML)
+	c.ServerConfigDiffs = []serverconfig.Diff{}
+	switch {
+	case a.ServerConfig == nil && b.ServerConfig == nil:
+	case a.ServerConfig == nil || b.ServerConfig == nil:
+		c.ServerConfigNote = "Only one of the two runs recorded the server's settings, so they cannot be compared."
+	case a.ServerConfig.Status != serverconfig.StatusOK || b.ServerConfig.Status != serverconfig.StatusOK:
+		c.ServerConfigNote = "The server's settings could not be read for one of the runs."
+	default:
+		if d := serverconfig.Compare(a.ServerConfig, b.ServerConfig); d != nil {
+			c.ServerConfigDiffs = d
+		}
+	}
 	fa, fb := map[string]bool{}, map[string]bool{}
 	for _, f := range a.Findings {
 		fa[f.ID] = true
@@ -136,6 +153,43 @@ func Compare(am, bm Meta, a, b *runsummary.Summary) Comparison {
 	sort.Strings(c.OnlyInA)
 	sort.Strings(c.OnlyInB)
 	return c
+}
+
+// SettingDiff is one setting and its value in each compared run (in the order asked).
+type SettingDiff struct {
+	Key    string   `json:"key"`
+	Values []string `json:"values"`
+}
+
+// diffConfigMany lists the settings whose value is not the same in every config.
+func diffConfigMany(yamls []string) []SettingDiff {
+	flat := make([]map[string]string, len(yamls))
+	keys := map[string]bool{}
+	for i, y := range yamls {
+		flat[i] = flatten(y)
+		for k := range flat[i] {
+			keys[k] = true
+		}
+	}
+	out := []SettingDiff{}
+	for k := range keys {
+		if strings.HasPrefix(k, "output.") {
+			continue
+		}
+		vals := make([]string, len(flat))
+		same := true
+		for i, f := range flat {
+			vals[i] = f[k]
+			if vals[i] != vals[0] {
+				same = false
+			}
+		}
+		if !same {
+			out = append(out, SettingDiff{Key: k, Values: vals})
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Key < out[j].Key })
+	return out
 }
 
 // diffConfig lists the settings that differ between two YAML configs.

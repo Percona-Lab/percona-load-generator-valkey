@@ -187,9 +187,8 @@ test('Compare Runs shows the sweep results table with the plateau reading', asyn
   assert.match(text(doc, '#sweepBody'), /More workers stopped helping after 16 workers/);
   assert.match(text(doc, '#sweepBody'), /p99 latency reached twice/);
   assert.match(trs[1].textContent, /98%|97%/, 'scaling efficiency is shown');
-  const ids = w.chartLog.map(c => c.canvas.id);
-  assert.ok(ids.includes('ch-sw-ops') && ids.includes('ch-sw-lat'));
-  assert.deepEqual([...w.chartLog.find(c => c.canvas.id === 'ch-sw-ops').data.labels], fx.rows.map(r => String(r.value)));
+  assert.equal(rows(doc, '#sweepFigs svg').length, 2, 'a worker sweep shows the two figures');
+  assert.ok(!w.chartLog.some(c => c.canvas.id === 'ch-sw-ops'), 'and not the older line charts');
   close();
 });
 
@@ -205,6 +204,8 @@ test('a rate sweep shows served share and dropped operations', async () => {
   assert.match(text(doc, '#sweepBody'), /could not serve 40000/);
   assert.ok(doc.querySelector('#sweepBody .banner.warn'), 'a saturation note is a warning');
   assert.match(rows(doc, '#sweepTable tbody tr')[3].textContent, /60%/);
+  assert.equal(rows(doc, '#sweepFigs').length, 0, 'a rate sweep has no worker figures');
+  assert.ok(doc.getElementById('ch-sw-ops'), 'a rate sweep keeps its throughput and latency charts');
   close();
 });
 
@@ -314,5 +315,14 @@ test('a #range= link opens the Time Machine on that range', async () => {
   const ch = w.chartLog.find(c => c.canvas.id === 'ch-throughput');
   assert.equal(ch.options.scales.x.min, 3);
   assert.ok(ch.updates >= 1, 'a chart created on a zoomed range must be updated, or the browser keeps the full axis');
+  close();
+});
+
+test('the "No sweeps yet" note is not shown when sweeps exist', async () => {
+  const { doc, close } = await loadPage({}, { hash: '#tab=compare' });
+  await tick(60);
+  assert.ok(doc.querySelectorAll('#sweepSelect option').length > 0, 'the fixture has a sweep');
+  assert.equal(doc.getElementById('sweepMsg').hidden, true);
+  assert.equal(doc.getElementById('sweepBar').hidden, false);
   close();
 });

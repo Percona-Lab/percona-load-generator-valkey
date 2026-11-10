@@ -24,6 +24,7 @@ type Config struct {
 	Dataset  Dataset       `yaml:"dataset"`
 	Workload Workload      `yaml:"workload"`
 	Server   ServerMetrics `yaml:"server_metrics"`
+	SrvConf  ServerConfig  `yaml:"server_config,omitempty"`
 	KeySpace KeySpace      `yaml:"keyspace_analysis"`
 	Record   Record        `yaml:"record"`
 	Output   Output        `yaml:"output"`
@@ -63,6 +64,14 @@ type ServerMetrics struct {
 	Slowlog        bool          `yaml:"slowlog"`         // poll SLOWLOG GET for new entries
 	SlowlogEntries int           `yaml:"slowlog_entries"` // entries fetched per poll
 	Latency        bool          `yaml:"latency"`         // poll LATENCY LATEST
+}
+
+// ServerConfig controls recording the server's settings with the run: CONFIG GET *
+// before the load starts and again when it ends (read-only). It is off by default.
+// Name is the user's label for the server setup (for example "valkey-9.1-io4").
+type ServerConfig struct {
+	Enabled bool   `yaml:"enabled"`
+	Name    string `yaml:"name"`
 }
 
 // Output controls what a run records.
@@ -475,6 +484,16 @@ func (c Config) Validate() error {
 	}
 	if c.Server.SlowlogEntries < 1 || c.Server.SlowlogEntries > 10000 {
 		add("server_metrics.slowlog_entries: must be 1-10000, got %d", c.Server.SlowlogEntries)
+	}
+
+	if len(c.SrvConf.Name) > 80 {
+		add("server_config.name: must be at most 80 characters, got %d", len(c.SrvConf.Name))
+	}
+	for _, r := range c.SrvConf.Name {
+		if r < ' ' || r == 0x7f {
+			add("server_config.name: must not contain control characters")
+			break
+		}
 	}
 
 	c.validateRunShape(add)

@@ -22,6 +22,7 @@
       "server_version": "9.1.3",
       "started_at": "2026-11-04T21:00:00Z",
       "stopped": false,
+      "target": "127.0.0.1:6379",
       "target_mode": "sentinel",
       "warnings": 1
     },
@@ -47,6 +48,7 @@
       "server_version": "9.1.3",
       "started_at": "2026-11-04T20:00:00Z",
       "stopped": false,
+      "target": "127.0.0.1:6379",
       "target_mode": "cluster",
       "warnings": 1
     }

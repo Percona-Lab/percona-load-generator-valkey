@@ -8,6 +8,8 @@ healthy run prints `findings: none`.
 In the web UI, findings are on the **Insights** tab, which has a count badge for warnings and critical findings.
 They also appear in each run's report. The most serious come first: **critical**, then **warning**, then **info**.
 
+![The Insights tab: two warnings from a run with a failover, each with its evidence and advice](../images/web_insights.png)
+
 | Rule id | Needs server metrics | Fires when | Severity |
 |---|---|---|---|
 | `client-errors` | no | Any operation failed. Critical at 1% or more of operations. | warning / critical |

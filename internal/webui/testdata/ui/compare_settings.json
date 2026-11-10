@@ -1,0 +1,43 @@
+{
+  "diffs": [
+    {
+      "key": "server_metrics.enabled",
+      "values": [
+        "true",
+        "false"
+      ]
+    },
+    {
+      "key": "workload.mix[0].op",
+      "values": [
+        "GET",
+        "HGET"
+      ]
+    },
+    {
+      "key": "workload.mix[0].weight",
+      "values": [
+        "80",
+        "1"
+      ]
+    },
+    {
+      "key": "workload.mix[1].op",
+      "values": [
+        "SET",
+        ""
+      ]
+    },
+    {
+      "key": "workload.mix[1].weight",
+      "values": [
+        "20",
+        ""
+      ]
+    }
+  ],
+  "runs": [
+    "20261104-100000",
+    "20261104-130000"
+  ]
+}

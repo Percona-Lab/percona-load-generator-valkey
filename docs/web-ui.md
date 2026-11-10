@@ -72,13 +72,13 @@ Once you've chosen a workload, a row of tabs appears under the header. The brand
 | **New run** | The settings of the chosen workload, at three levels and in categories, plus saved settings. | [settings-levels.md](settings-levels.md), [custom-workload-builder.md](custom-workload-builder.md), [server-metrics.md](server-metrics.md) |
 | **Live Metrics** | Throughput, latency, errors and the per-operation table, updating while the run goes. | below |
 | **Latency Analysis** | Percentiles, latency over time and per-operation latency for a finished run. | below |
-| **Server** | Server-side charts (ops/s, memory, hit ratio, clients). For a cluster, it also shows the nodes table, topology changes and per-node charts. Needs server metrics. | [server-metrics.md](server-metrics.md), [cluster-and-sentinel.md](cluster-and-sentinel.md) |
+| **Server** | Server-side charts (ops/s, memory, hit ratio, clients). For a cluster, it also shows the nodes table, topology changes and per-node charts. Needs server metrics. A "Server configuration" card above them shows the recorded server settings and works without server metrics. | [server-metrics.md](server-metrics.md), [cluster-and-sentinel.md](cluster-and-sentinel.md) |
 | **Slowlog** | Commands the server found slow during the run. Needs server metrics. | [server-metrics.md](server-metrics.md) |
 | **Key Space** | Types, sizes, expiry and the biggest keys after a run. | [key-space-analysis.md](key-space-analysis.md) |
 | **Insights** | Findings with evidence and advice. | [insights.md](insights.md) |
 | **Run History** | Every finished run; open, report, delete, pick two to compare. | [trends-and-history.md](trends-and-history.md) |
 | **Replay Comparison** | Your replays, and files from `plgv replay -summary`, compared. | [replay-comparison.md](replay-comparison.md), [record-and-replay-web-ui.md](record-and-replay-web-ui.md) |
-| **Compare Runs** | Two runs side by side, and sweep results. | [compare-runs.md](compare-runs.md), [load-profiles-and-sweep.md](load-profiles-and-sweep.md) |
+| **Compare Runs** | Several runs on the same charts (up to 8), a running workload against finished ones, the details of two runs, and sweep results. | [compare-runs.md](compare-runs.md), [load-profiles-and-sweep.md](load-profiles-and-sweep.md) |
 | **Trends** | The same workload over time, with regression flags. | [trends-and-history.md](trends-and-history.md) |
 
 ## Live Metrics

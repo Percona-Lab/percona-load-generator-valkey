@@ -53,6 +53,7 @@ Every feature has its own page, and everything described there was run against a
 |---|---|
 | [`docs/metrics-and-server-stats.md`](docs/metrics-and-server-stats.md) | Client and server metrics, coordinated omission, run summary |
 | [`docs/server-metrics.md`](docs/server-metrics.md) | The Server metrics checkbox, Server and Slowlog tabs |
+| [`docs/server-config.md`](docs/server-config.md) | Record the server's settings and a setup name with each run, and compare them |
 | [`docs/insights.md`](docs/insights.md) | Every finding rule: when it fires and what to do |
 | [`docs/load-profiles-and-sweep.md`](docs/load-profiles-and-sweep.md) | Load profiles, open loop, sweeps, Time Machine |
 | [`docs/performance-tuning.md`](docs/performance-tuning.md) | Getting the most from the generator and the server |

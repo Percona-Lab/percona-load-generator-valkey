@@ -13,6 +13,7 @@ import (
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/insights"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/keyscan"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/rawcmd"
+	"github.com/Percona-Lab/percona-load-generator-valkey/internal/serverconfig"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/servermetrics"
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/valkey"
 )
@@ -40,6 +41,8 @@ type Summary struct {
 	Series []Point `json:"series"`
 	PerOp  []Op    `json:"per_op"`
 	Server *Server `json:"server,omitempty"`
+	// ServerConfig is the server's settings (CONFIG GET *); present only when server_config was on.
+	ServerConfig *serverconfig.Snapshot `json:"server_config,omitempty"`
 	// KeySpace is the key-space analysis, present when keyspace_analysis was on.
 	KeySpace *keyscan.Result `json:"keyspace,omitempty"`
 	// Traffic is the traffic fingerprint of a deterministic run.

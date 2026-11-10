@@ -92,12 +92,42 @@ input[aria-invalid=true], select[aria-invalid=true] { border-color:var(--danger)
 .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:var(--space-3) var(--space-4); }
 .chart-card h3 { margin-bottom:var(--space-2); font-size:var(--fs-base); }
 .chart-box { position:relative; height:240px; }
+/* Compare Runs: several runs on the same charts */
+.card-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:var(--space-2) var(--space-3); }
+.card-head h3 { margin:0; }
+.sc-scroll { max-height:360px; overflow:auto; border:1px solid var(--border); border-radius:var(--radius-lg); }
+.sc-scroll table.data { border:0; border-radius:0; }
+.sc-scroll table.data th { position:sticky; top:0; z-index:1; }
+.cmp-picker { display:flex; flex-wrap:wrap; gap:10px; margin:var(--space-2) 0 var(--space-1); max-height:280px; overflow-y:auto; padding:2px; }
+.cmp-run { margin:0; padding:6px 12px 8px; border:1px solid var(--border); border-radius:var(--radius-lg); background:var(--surface-muted); min-width:220px; }
+.cmp-run legend { padding:0 6px; font-weight:600; color:var(--text); }
+.cmp-run.cmp-live { border-color:var(--green, #059669); }
+.cmp-run .cmp-sub { margin:0 0 4px; font-size:var(--fs-sm); color:var(--text-muted); }
+.cmp-pick { display:flex; align-items:center; gap:8px; margin:2px 0; cursor:pointer; }
+.cmp-actions { display:flex; flex-wrap:wrap; gap:8px; margin:6px 0; }
+.btn-flat { background:transparent; border-color:transparent; color:var(--accent); }
+.btn-flat:hover { background:var(--accent-soft); }
+.ms-legend { display:flex; flex-wrap:wrap; gap:4px 16px; margin:0 0 var(--space-3); font-size:var(--fs-sm); color:var(--text-secondary); }
+.ms-legend-item { display:inline-flex; align-items:center; gap:6px; cursor:default; transition:opacity .12s; }
+.ms-legend-item.is-dim { opacity:.3; }
+.cmp-line { display:inline-block; width:28px; height:0; border-top:3px solid; }
+.cmp-diff { margin:6px 0 0; font-size:var(--fs-sm); color:var(--text-secondary); }
+.segmented { display:inline-flex; gap:2px; padding:3px; margin-left:auto; background:var(--surface-sunken); border:1px solid var(--border); border-radius:var(--radius-md); }
+.segmented [role="radio"] { min-height:28px; padding:0 12px; border:0; border-radius:var(--radius-sm); background:transparent; color:var(--text-secondary); font:inherit; cursor:pointer; }
+.segmented [role="radio"][aria-checked="true"] { background:var(--surface); color:var(--accent); font-weight:600; box-shadow:0 1px 2px rgba(16,24,40,.12); }
+.sweep-figs { display:grid; grid-template-columns:repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap:12px; margin:10px 0 4px; }
+.sweep-fig { border:1px solid var(--border); border-radius:var(--radius-md); padding:8px 10px; min-width:0; background:var(--surface); }
+.sweep-fig-title { font-weight:600; font-size:var(--fs-sm); color:var(--text); }
+.sweep-fig svg { width:100%; height:auto; display:block; }
+.sweep-fig svg text { font-family:inherit; font-size:11px; fill:var(--text-secondary); }
+.sweep-fig svg .sv-ink { fill:var(--text); font-weight:600; }
+.sweep-fig svg .sv-warn { fill:var(--warn); font-weight:600; }
 table.data { width:100%; border-collapse:collapse; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); overflow:hidden; }
 table.data th { background:var(--surface-muted); text-align:left; font-size:var(--fs-xs); text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); padding:var(--space-2) var(--space-3); border-bottom:1px solid var(--border); }
 table.data td { padding:var(--space-2) var(--space-3); border-bottom:1px solid var(--border); }
 table.data tr:last-child td { border-bottom:0; }
 table.data tbody tr:hover { background:var(--surface-muted); }
-td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+table.data td.num, table.data th.num, td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
 code, .mono { font-family:var(--font-mono); font-size:var(--fs-sm); }
 .insight { border:1px solid var(--border); border-left-width:5px; border-radius:var(--radius-md); padding:var(--space-3) var(--space-4); margin-bottom:var(--space-3); background:var(--surface); }
 .insight.critical { border-left-color:var(--danger); background:var(--danger-soft); }
@@ -536,6 +566,15 @@ nav.tabs { background:var(--surface); border:1px solid var(--border); border-rad
     <div class="note-box" id="ksSetNote" data-testid="keyspace-note"><strong>Key-space analysis</strong>: When the run ends, plgv samples keys on the server with <code>SCAN</code> and reads each one's type, size (<code>MEMORY USAGE</code>), expiry (<code>PTTL</code>) and length. The Key Space tab shows the types, sizes, expiry and the biggest keys, and the Insights tab warns about big keys. It only reads, never changes data, and runs after the measured part, so it does not affect the results. In a cluster every primary is scanned. Cost: a few commands per inspected key, on the server for a few seconds. Off by default.</div>
   </div>
 
+  <div class="card" data-level="advanced" data-cat="metrics" data-group="srvconfig" id="srvConfigCard">
+    <h3>Server configuration <span class="level-tag">Advanced</span></h3>
+    <div class="field-check"><input type="checkbox" id="f-sc" data-path="server_config.enabled"><label for="f-sc">Record the server's settings with this run</label></div>
+    <div id="scOptions" hidden>
+      <div class="form-group" style="margin-top:12px"><label for="f-scname">Name for this server setup (optional)</label><input type="text" id="f-scname" class="f-md" data-path="server_config.name" maxlength="80" placeholder="valkey-9.1-io-threads-4"></div>
+    </div>
+    <div class="note-box" id="scNote" data-testid="server-config-note"><strong>Server configuration</strong>: Saves the settings the Valkey server is running with (for example <code>maxmemory</code>, <code>io-threads</code>, <code>appendonly</code>), so you can tell later which setup produced the numbers and see what differs between two runs. plgv sends one read-only <code>CONFIG GET *</code> before the test starts and one when it ends. It never changes a setting. Passwords are hidden before anything is saved. The name is just a label you choose, to find and compare runs by setup. If the server does not allow <code>CONFIG</code>, the run still works and says so. Off by default.</div>
+  </div>
+
   <div class="card" data-level="advanced" data-cat="data" data-group="dataset2">
     <h3>Dataset details <span class="level-tag">Advanced</span></h3>
     <div class="grid">
@@ -649,6 +688,18 @@ nav.tabs { background:var(--surface); border:1px solid var(--border); border-rad
 <!-- ============ Server ============ -->
 <section id="panel-server" data-panel="server" role="tabpanel" aria-labelledby="tab-server" hidden>
   <h2>Server</h2>
+  <div class="card" id="scView" data-testid="server-config-card" hidden>
+    <h3>Server configuration <span id="scTitle" class="settings-note"></span></h3>
+    <div id="scMsg" class="settings-note"></div>
+    <div id="scTools" hidden>
+      <div class="grid">
+        <div class="form-group"><label for="scNode">Server</label><select id="scNode"></select></div>
+        <div class="form-group"><label for="scFilter">Show</label><select id="scFilter"><option value="all">all settings</option></select></div>
+        <div class="form-group"><label for="scSearch">Search</label><input type="text" id="scSearch" class="f-md" placeholder="maxmemory"></div>
+      </div>
+      <div class="sc-scroll"><table class="data" id="scTable"><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody></tbody></table></div>
+    </div>
+  </div>
   <div id="srvEmpty" class="empty"></div>
   <div id="srvBody" hidden>
     <div class="kpis" id="srvKpis"></div>
@@ -715,31 +766,54 @@ nav.tabs { background:var(--surface); border:1px solid var(--border); border-rad
   <div class="toolbar">
     <button class="btn btn-small" id="histCompare" type="button" disabled>Compare selected</button>
     <span class="settings-note" id="histNote">Select two runs to compare them.</span>
+    <label for="histSetup" class="settings-note" id="histSetupLbl" hidden>Server setup</label>
+    <select id="histSetup" aria-label="Filter by server setup" hidden></select>
   </div>
   <div id="histEmpty" class="empty" hidden>No finished runs yet.</div>
   <table class="data" id="histTable" hidden>
-    <thead><tr><th></th><th>Run</th><th>Started</th><th class="num">Duration</th><th class="num">ops/s</th><th class="num">p99</th><th class="num">Errors</th><th>Findings</th><th></th></tr></thead>
+    <thead><tr><th></th><th>Run</th><th>Started</th><th class="num">Duration</th><th class="num">ops/s</th><th class="num">p99</th><th class="num">Errors</th><th>Findings</th><th>Server setup</th><th></th></tr></thead>
     <tbody></tbody>
   </table>
 </section>
 
 <!-- ============ Compare ============ -->
 <section id="panel-compare" data-panel="compare" role="tabpanel" aria-labelledby="tab-compare" hidden>
-  <h2>Compare Runs</h2>
-  <div class="toolbar">
-    <label for="cmpA">Run A</label><select id="cmpA" class="f-lg"></select>
-    <label for="cmpB">Run B</label><select id="cmpB" class="f-lg"></select>
-    <button class="btn btn-primary btn-small" id="cmpGo" type="button">Compare</button>
+  <div class="card" id="cmpPanel">
+    <div class="card-head"><h3>Compare runs</h3><span class="settings-note" id="cmpSub"></span></div>
+    <p class="settings-note">Pick any runs to draw them on the same charts. Every line starts at the start of its run, so runs with the same settings line up. If a workload is running, its line keeps growing against the finished runs.</p>
+    <div class="cmp-picker" id="cmpPicker" role="group" aria-label="Runs to compare"></div>
+    <div class="cmp-actions">
+      <button type="button" class="btn btn-flat btn-small" id="cmpLatestTwo">Latest two runs</button>
+      <button type="button" class="btn btn-flat btn-small" id="cmpClear">Clear</button>
+    </div>
+    <div id="sweepSection">
+      <div class="toolbar" id="sweepBar">
+        <label for="sweepSelect">Sweep</label><select id="sweepSelect" class="f-lg"></select>
+        <button class="btn btn-small" id="sweepGo" type="button">Show sweep</button>
+      </div>
+      <div id="sweepMsg" class="empty">No sweeps yet. Pick "Find the limit" on the front page, or set Sweep under Advanced > Workload execution, to run one workload at several worker counts or target rates.</div>
+      <div id="sweepBody" hidden></div>
+    </div>
+    <p class="settings-note" id="cmpHint" aria-live="polite"></p>
+    <p class="ms-legend" id="cmpLegend"></p>
+    <p class="cmp-diff" id="cmpDiff"></p>
   </div>
-  <div id="cmpMsg" class="empty">Pick two runs. Differences are shown as B relative to A.</div>
+  <div class="charts" id="cmpCharts" style="grid-template-columns:repeat(auto-fit,minmax(360px,1fr))" hidden>
+    <div class="chart-card"><h3>Throughput (ops/s) <span class="settings-note">all operations</span></h3><div class="chart-box"><canvas id="cmpThroughputChart"></canvas></div></div>
+    <div class="chart-card"><h3>Latency (ms) <span class="settings-note">median · all operations</span></h3><div class="chart-box"><canvas id="cmpLatencyChart"></canvas></div></div>
+    <div class="chart-card">
+      <div class="card-head"><h3>Tail latency (ms)</h3>
+        <div class="segmented" id="cmpTailMetric" role="radiogroup" aria-label="Tail latency percentile">
+          <button type="button" role="radio" data-metric="p99" aria-checked="true" tabindex="0">p99</button>
+          <button type="button" role="radio" data-metric="p95" aria-checked="false" tabindex="-1">p95</button>
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="cmpTailChart"></canvas></div>
+    </div>
+  </div>
+  <h3 style="margin-top:24px" id="cmpDetailsHeading" hidden>Details of the two runs</h3>
+  <div id="cmpMsg" class="empty" hidden></div>
   <div id="cmpBody" hidden></div>
-  <h2 style="margin-top:32px" id="sweepHeading">Sweep results</h2>
-  <div class="toolbar">
-    <label for="sweepSelect">Sweep</label><select id="sweepSelect" class="f-lg"></select>
-    <button class="btn btn-small" id="sweepGo" type="button">Show sweep</button>
-  </div>
-  <div id="sweepMsg" class="empty">No sweeps yet. Pick "Find the limit" on the front page, or set Sweep under Advanced > Workload execution, to run one workload at several worker counts or target rates.</div>
-  <div id="sweepBody" hidden></div>
 </section>
 
 <!-- ============ Replay Comparison ============ -->
@@ -929,7 +1003,7 @@ function showTab(name) {
   $$('[data-tab]').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
   $$('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== name; });
   if (name === 'history') loadHistory();
-  if (name === 'compare') { loadHistory().then(fillCompareSelects); loadSweeps(); }
+  if (name === 'compare') cmp.opening = cmpOpen();
   if (name === 'trends') loadTrends();
   if (name === 'replay') loadReplays();
   renderShell();
@@ -1011,7 +1085,7 @@ function populateInputs() {
     else inp.value = v == null ? '' : v;
   });
   $('#f-label').value = S.label;
-  syncPreset(); syncKeySpace(); syncTLS();
+  syncPreset(); syncKeySpace(); syncSrvConfig(); syncTLS();
   syncSrvOptions(); syncProfile(); syncSweep(); syncMode(); renderSteps(); renderMix(); updateSummary();
 }
 function onInput(e) {
@@ -1030,6 +1104,7 @@ function onInput(e) {
   clearError(inp);
   if (p === 'server_metrics.enabled') syncSrvOptions();
   if (p === 'keyspace_analysis.enabled') syncKeySpace();
+  if (p === 'server_config.enabled') syncSrvConfig();
   if (p === 'target.tls.enabled') syncTLS();
   if (p === 'run.load_profile.kind') syncProfile();
   if (p === 'run.sweep.kind') syncSweep();
@@ -1233,6 +1308,7 @@ function fillPresets() {
   (S.presets || []).forEach(p => sel.append(el('option', { value: p.name, text: p.title })));
 }
 function syncTLS() { const t = S.cfg.target && S.cfg.target.tls; $('#tlsOptions').hidden = !(t && t.enabled); }
+function syncSrvConfig() { $('#scOptions').hidden = !(S.cfg.server_config && S.cfg.server_config.enabled); }
 function syncKeySpace() { $('#ksOptions').hidden = !(S.cfg.keyspace_analysis && S.cfg.keyspace_analysis.enabled); }
 function syncPreset() {
   const name = (S.cfg.workload && S.cfg.workload.preset) || '';
@@ -1518,6 +1594,7 @@ async function onRunDone(id) {
   const r = await api('GET', '/api/runs/' + id);
   if (r.ok) { S.view = r.data; S.viewId = id; S.range = null; S.showReplay = false; S.replayView = null; }
   await loadHistory();
+  if (cmp.selected.delete('live')) cmp.selected.add(id); // the running line is now the stored run
   updateStatus();
   renderTab(S.tab);
 }
@@ -1532,7 +1609,7 @@ function updateStatus() {
   const live = isActive() || st === 'done' || st === 'error';
   const elapsed = isActive() ? S.live.elapsed_seconds : (S.view && S.view.client ? S.view.client.elapsed_seconds : S.live.elapsed_seconds);
   const replaying = S.live.kind === 'replay';
-  $('#runClock').textContent = live ? (replaying ? mmss(elapsed) : `${mmss(elapsed)} / ${mmss(S.live.duration_seconds)}`) : '00:00 / 00:00';
+  $('#runClock').textContent = live ? (replaying ? mmss(elapsed) : `${mmss(elapsed)} / ${mmss(isActive() || !(S.view && S.view.client) || S.viewId === S.live.run_id ? S.live.duration_seconds : elapsed)}`) : '00:00 / 00:00';
   $('#startBtn').disabled = isActive();
   $$('.task-main, .task-defaults').forEach(b => { b.disabled = isActive(); });
   $('#taskSel').disabled = isActive(); $('#taskReset').disabled = isActive();
@@ -1554,7 +1631,7 @@ function viewModel() {
   return null;
 }
 function renderTab(name) {
-  ({ live: renderLive, latency: renderLatency, server: renderServer, slowlog: renderSlowlog, keyspace: renderKeySpace, insights: renderInsights }[name] || (() => {}))();
+  ({ live: renderLive, latency: renderLatency, server: renderServer, slowlog: renderSlowlog, keyspace: renderKeySpace, insights: renderInsights, compare: cmpRender }[name] || (() => {}))();
   updateInsightBadge();
 }
 function banner(vm) {
@@ -1692,8 +1769,49 @@ function serverOffMessage(box, what) {
     el('p', { class: 'settings-note', text: 'Turn on "Collect server metrics" in Settings to also read INFO, SLOWLOG and LATENCY from the server during a run.' }),
     el('button', { class: 'btn btn-small', type: 'button', text: 'Go to Settings', onclick: () => openSetting('#f-srv') }));
 }
+function renderServerConfig(vm) {
+  const card = $('#scView');
+  const sc = vm && vm.summary && vm.summary.server_config;
+  const wanted = vm && (sc || (vm.live && getPath(S.cfg, 'server_config.enabled')));
+  card.hidden = !wanted;
+  if (!wanted) return;
+  $('#scTitle').textContent = sc && sc.name ? '(' + sc.name + ')' : '';
+  const tools = $('#scTools'), msg = $('#scMsg');
+  tools.hidden = true;
+  if (!sc) { msg.textContent = 'The settings are shown when the run finishes.'; return; }
+  if (sc.status !== 'ok') {
+    msg.textContent = sc.status === 'not_permitted'
+      ? 'The server does not allow CONFIG GET (it is blocked or this user has no permission), so its settings were not recorded. The run itself was not affected.'
+      : 'The server settings could not be read. The run itself was not affected.' + (sc.nodes && sc.nodes[0] && sc.nodes[0].error ? ' (' + sc.nodes[0].error + ')' : '');
+    return;
+  }
+  const nodes = sc.nodes.filter(n => n.status === 'ok');
+  msg.textContent = 'Read before the test started. Passwords are hidden.' + (sc.differ && sc.differ.length ? ' ' + sc.differ.length + ' setting(s) differ between servers.' : '');
+  tools.hidden = false;
+  const nodeSel = clear($('#scNode'));
+  nodes.forEach((n, i) => nodeSel.append(el('option', { value: String(i), text: n.addr })));
+  nodeSel.parentElement.hidden = nodes.length < 2;
+  const fsel = clear($('#scFilter'));
+  fsel.append(el('option', { value: 'all', text: 'all settings' }), el('option', { value: 'changed', text: 'changed during the run' }));
+  if (sc.differ && sc.differ.length) fsel.append(el('option', { value: 'differ', text: 'different between servers' }));
+  const draw = () => {
+    const n = nodes[+nodeSel.value || 0], q = $('#scSearch').value.trim().toLowerCase(), f = fsel.value;
+    const changed = new Map((n.changed || []).map(c => [c.key, c]));
+    const differ = new Set(sc.differ || []);
+    const tb = clear($('#scTable tbody'));
+    Object.keys(n.settings || {}).sort().filter(k => (!q || k.toLowerCase().includes(q) || String(n.settings[k]).toLowerCase().includes(q)) &&
+      (f === 'all' || (f === 'changed' && changed.has(k)) || (f === 'differ' && differ.has(k)))).forEach(k => {
+      const c = changed.get(k);
+      tb.append(el('tr', {}, el('td', { text: k }), el('td', { text: n.settings[k] === '' ? '(empty)' : n.settings[k] + (c ? '  (changed to ' + c.after + ' during the run)' : '') })));
+    });
+  };
+  nodeSel.onchange = fsel.onchange = draw;
+  $('#scSearch').oninput = draw;
+  draw();
+}
 function renderServer() {
   const vm = viewModel();
+  renderServerConfig(vm);
   const on = vm && vm.server;
   $('#srvBody').hidden = !on;
   $('#srvEmpty').hidden = !!on;
@@ -1856,7 +1974,14 @@ function renderHistory() {
   const tb = clear($('#histTable tbody'));
   $('#histEmpty').hidden = S.runs.length > 0; $('#histTable').hidden = S.runs.length === 0;
   S.histSel = S.histSel.filter(id => S.runs.some(r => r.id === id));
-  S.runs.forEach(r => {
+  const setups = [...new Set(S.runs.map(r => r.server_setup).filter(Boolean))].sort();
+  const sSel = $('#histSetup');
+  if (S.histSetup && !setups.includes(S.histSetup)) S.histSetup = '';
+  sSel.hidden = $('#histSetupLbl').hidden = setups.length === 0;
+  clear(sSel).append(el('option', { value: '', text: 'all setups' }), ...setups.map(n => el('option', { value: n, text: n })));
+  sSel.value = S.histSetup || '';
+  sSel.onchange = () => { S.histSetup = sSel.value; renderHistory(); };
+  S.runs.filter(r => !S.histSetup || r.server_setup === S.histSetup).forEach(r => {
     const cb = el('input', { type: 'checkbox', 'aria-label': 'Select ' + (r.label || r.id), 'data-run': r.id, onchange: e => {
       S.histSel = e.target.checked ? [...S.histSel, r.id].slice(-2) : S.histSel.filter(x => x !== r.id); renderHistory(); } });
     cb.checked = S.histSel.includes(r.id);
@@ -1871,6 +1996,7 @@ function renderHistory() {
     tb.append(el('tr', {}, el('td', {}, cb), el('td', {}, el('strong', { text: r.label || r.id }), el('div', { class: 'settings-note', text: r.mix })),
       el('td', { text: fmtTime(r.started_at) }), el('td', { class: 'num', text: r.duration_seconds.toFixed(0) + 's' }), el('td', { class: 'num', text: fmtInt(r.ops_per_sec) }),
       el('td', { class: 'num', text: fmtMs(r.p99_ms) }), el('td', { class: 'num', text: fmtInt(r.errors) }), chips,
+      el('td', { 'data-setup': r.server_setup || '', text: r.server_setup || (r.server_config ? 'recorded' : '-') }),
       el('td', {}, el('button', { class: 'btn btn-small', type: 'button', text: 'Open', 'data-open': r.id, onclick: () => openRun(r.id) }), ' ',
         el('a', { class: 'btn btn-small', href: '/api/runs/' + r.id + '/report', target: '_blank', rel: 'noopener', text: 'Report', style: 'display:inline-flex;align-items:center;text-decoration:none' }), ' ',
         el('button', { class: 'btn btn-small', type: 'button', text: 'Delete', 'data-delete': r.id, onclick: () => deleteRun(r) }),
@@ -1892,24 +2018,257 @@ async function deleteRun(r) {
   await loadHistory(); renderHistory();
 }
 $('#histCompare').addEventListener('click', () => {
-  const [a, b] = S.histSel; showTab('compare');
-  loadHistory().then(() => { fillCompareSelects(); $('#cmpA').value = a; $('#cmpB').value = b; runCompare(); });
+  cmp.selected.clear(); cmp.seeded = false; cmp.preselect = S.histSel.slice(); cmp.sig = null;
+  showTab('compare');
 });
 
-/* ---------- Compare ---------- */
-function runLabel(r) { return (r.label ? r.label + ' · ' : '') + fmtTime(r.started_at) + ' · ' + fmtInt(r.ops_per_sec) + ' ops/s'; }
-function fillCompareSelects() {
-  ['cmpA', 'cmpB'].forEach((id, i) => {
-    const sel = $('#' + id); const keep = sel.value; clear(sel);
-    S.runs.forEach(r => sel.append(el('option', { value: r.id, text: runLabel(r) })));
-    sel.value = keep && S.runs.some(r => r.id === keep) ? keep : (S.runs[i] ? S.runs[i].id : '');
+/* ---------- Compare Runs: several runs on the same charts ---------- */
+const CMP_MAX = 8;
+const CMP_DASH = [[], [9, 5], [3, 4], [10, 4, 2, 4], [1, 5], [6, 3, 1, 3]];
+const CMP_COLORS = ['#1486ff', '#ff7e1a', '#30d1b2', '#8b5cf6', '#f0b336', '#ec4899', '#059669', '#697793'];
+const cmp = { selected: new Set(), seeded: false, preselect: [], cache: new Map(), pending: new Set(), charts: null, metric: 'p99',
+  focus: -1, focusFrom: '', sig: null, wired: false, detailKey: '', diffKey: '', diffText: '', loaded: false };
+const cmpMinuteLabel = v => Number.isInteger(v) ? String(v) : String(+v.toFixed(2));
+const runDuration = sec => sec == null ? '' : (sec >= 60 ? Math.floor(sec / 60) + 'm ' + String(Math.round(sec % 60)).padStart(2, '0') + 's' : Math.round(sec) + 's');
+const cmpShortTime = iso => { const d = new Date(iso); return isNaN(d) ? '' : d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }); };
+
+// What can be drawn: the running workload first, then the stored runs, newest first.
+function cmpEntries() {
+  const out = [];
+  const l = S.live;
+  if (l && isActive() && l.kind !== 'replay' && (l.series || []).length) {
+    out.push({ id: 'live', live: true, label: 'Running now', target: '', series: l.series });
+  }
+  (S.runs || []).forEach(r => out.push({
+    id: r.id, live: false, label: r.label || fmtTime(r.started_at), target: r.target || '', setup: r.server_setup || '', startedAt: r.started_at, durationSec: r.duration_seconds,
+    opsPerSec: r.ops_per_sec, sweep: r.sweep || null,
+    short: r.sweep ? (r.sweep.kind === 'rate' ? fmtInt(r.sweep.value) + '/s' : r.sweep.value + 'w') : (r.label ? r.label.slice(0, 12) : cmpShortTime(r.started_at)) }));
+  return out;
+}
+function cmpFetch(id) {
+  if (cmp.cache.has(id) || cmp.pending.has(id)) return;
+  cmp.pending.add(id);
+  api('GET', '/api/runs/' + encodeURIComponent(id)).then(r => { cmp.pending.delete(id); cmp.cache.set(id, r.ok ? r.data : null); cmpRender(); });
+}
+// The samples of one entry; null while a stored run loads.
+function cmpPoints(e) {
+  if (e.live) return e.series;
+  if (!cmp.cache.has(e.id)) { cmpFetch(e.id); return null; }
+  const v = cmp.cache.get(e.id);
+  return v && Array.isArray(v.series) ? v.series : [];
+}
+// The running workload and the run before it, or the newest two finished runs.
+function cmpSeed(entries) {
+  if (cmp.seeded) return;
+  const add = e => cmp.selected.add(e.id);
+  if (cmp.preselect.length) {
+    if (!cmp.loaded) return; // wait for the stored runs
+    cmp.preselect.forEach(id => { const e = entries.find(x => x.id === id); if (e) add(e); });
+    cmp.preselect = []; cmp.seeded = true; return;
+  }
+  const live = entries.find(e => e.live);
+  if (live) add(live);
+  if (!cmp.loaded) return;
+  entries.filter(e => !e.live).slice(0, live ? 1 : 2).forEach(add);
+  cmp.seeded = true;
+}
+function cmpPicker(entries) {
+  const box = $('#cmpPicker');
+  const sig = entries.map(e => `${e.id}:${e.live ? 1 : 0}`).join(';');
+  if (sig === cmp.sig) { box.querySelectorAll('input[data-key]').forEach(b => { b.checked = cmp.selected.has(b.dataset.key); }); return; }
+  cmp.sig = sig;
+  clear(box);
+  if (!entries.length) { box.append(el('p', { class: 'settings-note', text: 'No runs to compare yet. Finished runs appear here once they are stored.' })); return; }
+  entries.forEach(e => {
+    const sub = e.live ? 'Live: keeps growing while it runs' : [fmtTime(e.startedAt), runDuration(e.durationSec), e.opsPerSec ? fmtInt(e.opsPerSec) + ' ops/s' : ''].filter(Boolean).join(' · ');
+    const cb = el('input', { type: 'checkbox', 'data-key': e.id });
+    cb.checked = cmp.selected.has(e.id);
+    box.append(el('fieldset', { class: 'cmp-run' + (e.live ? ' cmp-live' : ''), 'data-run': e.id }, el('legend', { text: e.label }),
+      el('div', { class: 'cmp-sub', text: sub }),
+      el('label', { class: 'cmp-pick' }, cb, ' ' + (e.target || 'server') + (e.setup ? ' · ' + e.setup : ''))));
   });
 }
-$('#cmpGo').addEventListener('click', runCompare);
-async function runCompare() {
-  const a = $('#cmpA').value, b = $('#cmpB').value;
+const cmpDimColor = c => { const m = /^#([0-9a-f]{6})$/i.exec(c); if (!m) return c; const n = parseInt(m[1], 16); return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, 0.18)`; };
+// Each line is named at its right end. Pointing at a name dims the other lines (the legend does the same).
+const cmpLabelsPlugin = {
+  id: 'cmpLabels',
+  afterDatasetsDraw(chart) {
+    const ctx = chart.ctx, items = [];
+    chart.data.datasets.forEach((ds, i) => {
+      const meta = chart.getDatasetMeta(i);
+      if (meta.hidden || !ds.shortLabel) return;
+      for (let k = meta.data.length - 1; k >= 0; k--) {
+        const d = ds.data[k];
+        if (d && d.y !== null && d.y !== undefined) { items.push({ idx: i, y: meta.data[k].y, x: chart.chartArea.right + 8, text: ds.shortLabel, color: ds.baseColor }); break; }
+      }
+    });
+    items.sort((a, b) => a.y - b.y);
+    for (let k = 1; k < items.length; k++) if (items[k].y - items[k - 1].y < 14) items[k].y = items[k - 1].y + 14;
+    chart._labelHits = [];
+    const ink = getComputedStyle(document.documentElement).getPropertyValue('--text').trim() || '#172033';
+    ctx.save(); ctx.font = '600 11px system-ui, sans-serif'; ctx.textBaseline = 'middle';
+    items.forEach(it => {
+      ctx.globalAlpha = cmp.focus >= 0 && cmp.focus !== it.idx ? 0.3 : 1;
+      ctx.fillStyle = it.color; ctx.beginPath(); ctx.arc(it.x + 3, it.y, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = ink; ctx.fillText(it.text, it.x + 10, it.y);
+      chart._labelHits.push({ idx: it.idx, x: it.x - 2, y: it.y - 8, w: ctx.measureText(it.text).width + 12, h: 16 });
+    });
+    ctx.restore();
+  }
+};
+function cmpSetFocus(idx, from) {
+  if (cmp.focus === idx) return;
+  cmp.focus = idx; cmp.focusFrom = idx < 0 ? '' : (from || 'label');
+  if (cmp.charts) Object.values(cmp.charts).forEach(ch => {
+    ch.data.datasets.forEach((ds, i) => {
+      const on = idx < 0 || idx === i;
+      ds.borderColor = on ? ds.baseColor : cmpDimColor(ds.baseColor);
+      ds.backgroundColor = ds.borderColor;
+      ds.borderWidth = idx === i ? 3.5 : (ds.baseWidth || 2);
+      ds.order = idx === i ? -1 : 0;
+    });
+    ch.update('none');
+  });
+  $$('#cmpLegend .ms-legend-item').forEach(n => n.classList.toggle('is-dim', idx >= 0 && Number(n.dataset.idx) !== idx));
+}
+function cmpMakeChart(id, yTitle) {
+  const canvas = document.getElementById(id);
+  if (!canvas || typeof Chart === 'undefined') return null;
+  canvas.addEventListener('mousemove', ev => {
+    const ch = typeof Chart.getChart === 'function' ? Chart.getChart(canvas) : null;
+    if (!ch || !ch._labelHits) return;
+    const r = canvas.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+    const hit = ch._labelHits.find(h => x >= h.x && x <= h.x + h.w && y >= h.y && y <= h.y + h.h);
+    canvas.style.cursor = hit ? 'pointer' : '';
+    if (hit) cmpSetFocus(hit.idx); else if (cmp.focusFrom === 'label') cmpSetFocus(-1);
+  });
+  canvas.addEventListener('mouseleave', () => { if (cmp.focusFrom === 'label') cmpSetFocus(-1); });
+  return new Chart(canvas, {
+    type: 'line', plugins: [cmpLabelsPlugin], data: { datasets: [] },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: false, layout: { padding: { right: 92 } },
+      interaction: { mode: 'nearest', axis: 'x', intersect: false },
+      elements: { point: { radius: 0, hoverRadius: 3 }, line: { borderWidth: 2, cubicInterpolationMode: 'monotone' } },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { title: items => items.length ? cmpMinuteLabel(Number(items[0].parsed.x)) + ' min since the run started' : '' } } },
+      scales: {
+        x: { type: 'linear', min: 0, title: { display: true, text: 'Minutes since each run started', color: '#7b8798', font: { size: 11 } }, ticks: { color: '#7b8798', callback: v => cmpMinuteLabel(Number(v)) } },
+        y: { beginAtZero: true, title: { display: true, text: yTitle, color: '#7b8798', font: { size: 11 } }, ticks: { color: '#7b8798' }, grid: { color: '#eef2f6' } }
+      }
+    }
+  });
+}
+function cmpWire() {
+  if (cmp.wired) return;
+  cmp.wired = true;
+  $('#cmpPicker').addEventListener('change', e => {
+    const box = e.target.closest('input[data-key]');
+    if (!box) return;
+    if (box.checked && cmp.selected.size >= CMP_MAX) { box.checked = false; $('#cmpHint').textContent = `Up to ${CMP_MAX} lines at a time keeps the charts readable. Untick one first.`; return; }
+    if (box.checked) cmp.selected.add(box.dataset.key); else cmp.selected.delete(box.dataset.key);
+    cmp.seeded = true; cmpRender();
+  });
+  $('#cmpClear').addEventListener('click', () => { cmp.selected.clear(); cmp.seeded = true; cmpRender(); });
+  $('#cmpLatestTwo').addEventListener('click', () => {
+    cmp.selected.clear();
+    cmpEntries().slice(0, 2).forEach(e => cmp.selected.add(e.id));
+    cmp.seeded = true; cmpRender();
+  });
+  $$('#cmpTailMetric [role="radio"]').forEach(b => b.addEventListener('click', () => { cmp.metric = b.dataset.metric; cmpRender(); }));
+  const legend = $('#cmpLegend');
+  const over = ev => { const n = ev.target.closest('.ms-legend-item'); if (n) cmpSetFocus(Number(n.dataset.idx), 'legend'); };
+  const out = ev => { if (ev.target.closest('.ms-legend-item') && cmp.focusFrom === 'legend') cmpSetFocus(-1); };
+  legend.addEventListener('mouseover', over); legend.addEventListener('mouseout', out);
+  legend.addEventListener('focusin', over); legend.addEventListener('focusout', out);
+}
+// Opens the tab: loads the runs and the sweeps, then picks what is most likely wanted.
+async function cmpOpen() {
+  cmpWire();
+  await Promise.all([loadHistory(), loadSweeps()]);
+  cmp.loaded = true;
+  cmpRender();
+}
+// Ticks every run of a sweep (up to the line limit).
+function cmpSelectSweep(id) {
+  cmp.selected.clear();
+  (S.runs || []).filter(r => r.sweep && r.sweep.id === id).sort((a, b) => a.sweep.index - b.sweep.index).slice(0, CMP_MAX).forEach(r => cmp.selected.add(r.id));
+  cmp.seeded = true; cmp.preselect = [];
+  cmpRender();
+}
+function cmpRender() {
+  if (S.tab !== 'compare') return;
+  cmpWire();
+  const entries = cmpEntries();
+  cmpSeed(entries);
+  cmpPicker(entries);
+  if (!cmp.charts) {
+    const c = { throughput: cmpMakeChart('cmpThroughputChart', 'ops/s'), latency: cmpMakeChart('cmpLatencyChart', 'ms (median)'), tail: cmpMakeChart('cmpTailChart', 'p99 latency (ms)') };
+    if (Object.values(c).some(x => !x)) return;
+    cmp.charts = c;
+  }
+  const picked = entries.filter(e => cmp.selected.has(e.id));
+  let loading = false;
+  const series = picked.map((e, i) => {
+    const pts = cmpPoints(e);
+    if (pts === null) loading = true;
+    return { e, pts: pts || [], name: e.label + (e.target ? ' · ' + e.target : ''), color: CMP_COLORS[i % CMP_COLORS.length], dash: CMP_DASH[i % CMP_DASH.length],
+      short: e.live ? 'now' : e.short };
+  });
+  if (cmp.focus >= series.length) { cmp.focus = -1; cmp.focusFrom = ''; }
+  const line = (pts, f) => pts.map(p => ({ x: (p.offset_s || 0) / 60, y: f(p) }));
+  const datasets = f => series.map((sr, i) => {
+    const on = cmp.focus < 0 || cmp.focus === i, bw = sr.e.live ? 3 : 2, col = on ? sr.color : cmpDimColor(sr.color);
+    return { label: sr.name, shortLabel: sr.short, baseColor: sr.color, baseWidth: bw, data: line(sr.pts, f), borderColor: col, backgroundColor: col,
+      borderDash: sr.dash, borderWidth: cmp.focus === i ? 3.5 : bw, order: cmp.focus === i ? -1 : 0, spanGaps: false };
+  });
+  const tail = cmp.metric === 'p95' ? 'p95_ms' : 'p99_ms';
+  const xMax = Math.max(1 / 60, ...series.map(sr => sr.pts.length ? (sr.pts[sr.pts.length - 1].offset_s || 0) / 60 : 0));
+  [['throughput', p => p.ops_per_sec, 'ops/s'], ['latency', p => p.p50_ms, 'ms (median)'], ['tail', p => p[tail], `${cmp.metric} latency (ms)`]].forEach(([k, f, title]) => {
+    const ch = cmp.charts[k];
+    ch.data.datasets = datasets(f);
+    ch.options.scales.x.min = 0; ch.options.scales.x.max = xMax;
+    ch.options.scales.y.title.text = title;
+    ch.update('none');
+  });
+  $$('#cmpTailMetric [role="radio"]').forEach(b => { const on = b.dataset.metric === cmp.metric; b.setAttribute('aria-checked', String(on)); b.tabIndex = on ? 0 : -1; });
+  $('#cmpCharts').hidden = !series.length;
+  $('#cmpSub').textContent = series.length ? `${series.length} line${series.length === 1 ? '' : 's'}` : '';
+  $('#cmpHint').textContent = loading ? 'Loading stored runs…' : (series.length ? '' : 'Tick at least one run above to draw it.');
+  clear($('#cmpLegend')).append(...series.map((sr, i) => el('span', { class: 'ms-legend-item' + (cmp.focus >= 0 && cmp.focus !== i ? ' is-dim' : ''), 'data-idx': String(i), tabindex: '0' },
+    el('span', { class: 'cmp-line', style: `border-top-style:${sr.dash.length ? 'dashed' : 'solid'};border-color:${sr.color}`, 'aria-hidden': 'true' }), sr.name)));
+  cmpSettingsDiff(picked.filter(e => !e.live));
+  cmpDetails(picked.filter(e => !e.live));
+  requestAnimationFrame(() => cmp.charts && Object.values(cmp.charts).forEach(c => c.resize && c.resize()));
+}
+// "Settings that differ" between the stored runs that are drawn.
+async function cmpSettingsDiff(stored) {
+  const diff = $('#cmpDiff');
+  if (stored.length < 2) { cmp.diffKey = ''; diff.textContent = ''; return; }
+  const ids = stored.map(e => e.id), key = ids.join(',');
+  if (key === cmp.diffKey) { diff.textContent = cmp.diffText; return; }
+  cmp.diffKey = key; cmp.diffText = ''; diff.textContent = '';
+  const r = await api('GET', '/api/compare-settings?ids=' + encodeURIComponent(key));
+  if (cmp.diffKey !== key) return; // the selection changed meanwhile
+  if (!r.ok) return;
+  const ds = r.data.diffs || [];
+  const show = v => v === '' || v == null ? '—' : v;
+  cmp.diffText = ds.length ? 'Settings that differ: ' + ds.slice(0, 8).map(d => `${d.key}: ${d.values.map(show).join(' vs ')}`).join(' · ') + (ds.length > 8 ? ` · and ${ds.length - 8} more` : '')
+    : 'The runs used the same settings, so differences come from the servers or the environment.';
+  diff.textContent = cmp.diffText;
+}
+// Exactly two stored runs: the metric table, setting differences, per-operation numbers and findings.
+function cmpDetails(stored) {
+  const heading = $('#cmpDetailsHeading');
+  if (stored.length !== 2) { cmp.detailKey = ''; heading.hidden = true; $('#cmpMsg').hidden = true; $('#cmpBody').hidden = true; return; }
+  const [a, b] = stored.slice().sort((x, y) => String(x.startedAt).localeCompare(String(y.startedAt))).map(e => e.id);
+  const key = a + ',' + b;
+  heading.hidden = false;
+  if (key === cmp.detailKey) return;
+  cmp.detailKey = key;
+  runCompare(a, b);
+}
+function runLabel(r) { return (r.label ? r.label + ' · ' : '') + fmtTime(r.started_at) + ' · ' + fmtInt(r.ops_per_sec) + ' ops/s'; }
+async function runCompare(a, b) {
   const msg = $('#cmpMsg'), body = clear($('#cmpBody'));
-  if (!a || !b || a === b) { msg.hidden = false; msg.textContent = a === b && a ? 'Pick two different runs.' : 'Pick two runs. Differences are shown as B relative to A.'; body.hidden = true; return; }
   const r = await api('GET', `/api/compare?a=${encodeURIComponent(a)}&b=${encodeURIComponent(b)}`);
   if (!r.ok) { msg.hidden = false; msg.textContent = r.data.error || 'Could not compare.'; body.hidden = true; return; }
   const c = r.data; msg.hidden = true; body.hidden = false;
@@ -1924,16 +2283,16 @@ async function runCompare() {
       el('td', { class: m.better === 'same' ? '' : (m.better === 'b' ? 'better' : 'worse'), text: verdict })));
   });
   t.append(tb); body.append(t);
-  body.append(el('div', { class: 'charts', style: 'margin-top:16px' },
-    el('div', { class: 'chart-card' }, el('h3', { text: 'Throughput (ops/s)' }), el('div', { class: 'chart-box' }, el('canvas', { id: 'ch-cmp-ops' }))),
-    el('div', { class: 'chart-card' }, el('h3', { text: 'p99 latency (ms)' }), el('div', { class: 'chart-box' }, el('canvas', { id: 'ch-cmp-p99' })))));
-  delete charts['ch-cmp-ops']; delete charts['ch-cmp-p99'];
-  drawChart('ch-cmp-ops', [{ label: 'A', data: xy(c.series_a || [], 'offset_s', 'ops_per_sec'), color: COLORS.sky }, { label: 'B', data: xy(c.series_b || [], 'offset_s', 'ops_per_sec'), color: COLORS.fire }], 'ops/s');
-  drawChart('ch-cmp-p99', [{ label: 'A', data: xy(c.series_a || [], 'offset_s', 'p99_ms'), color: COLORS.sky }, { label: 'B', data: xy(c.series_b || [], 'offset_s', 'p99_ms'), color: COLORS.fire }], 'ms');
   body.append(el('h3', { style: 'margin-top:16px', text: 'Setting differences' }));
   if (!c.config_diffs.length) body.append(el('p', { class: 'settings-note', text: 'The two runs used the same settings.' }));
   else { const dt = el('table', { class: 'data', id: 'cmpDiffs' }, el('thead', {}, el('tr', {}, el('th', { text: 'Setting' }), el('th', { text: 'A' }), el('th', { text: 'B' }))));
     const db = el('tbody', {}); c.config_diffs.forEach(d => db.append(el('tr', {}, el('td', {}, el('code', { text: d.key })), el('td', { text: d.a }), el('td', { text: d.b })))); dt.append(db); body.append(dt); }
+  body.append(el('h3', { style: 'margin-top:16px', text: 'Server setting differences' }));
+  const sd = c.server_config_diffs || [];
+  if (c.server_config_note) body.append(el('p', { class: 'settings-note', id: 'cmpSrvNote', text: c.server_config_note }));
+  else if (!sd.length) body.append(el('p', { class: 'settings-note', id: 'cmpSrvNote', text: c.A.server_config && c.B.server_config ? 'The two runs had the same server settings.' : 'Neither run recorded the server settings. Turn on "Record the server\'s settings with this run" in Settings to compare them.' }));
+  else { const st = el('table', { class: 'data', id: 'cmpSrvDiffs' }, el('thead', {}, el('tr', {}, el('th', { text: 'Server setting' }), el('th', { text: 'A' + (c.A.server_setup ? ' (' + c.A.server_setup + ')' : '') }), el('th', { text: 'B' + (c.B.server_setup ? ' (' + c.B.server_setup + ')' : '') }))));
+    const sb = el('tbody', {}); sd.forEach(d => sb.append(el('tr', {}, el('td', {}, el('code', { text: d.key })), el('td', { text: d.a }), el('td', { text: d.b })))); st.append(sb); body.append(st); }
   body.append(el('h3', { style: 'margin-top:16px', text: 'By operation' }));
   const ot = el('table', { class: 'data' }, el('thead', {}, el('tr', {}, el('th', { text: 'Operation' }), el('th', { class: 'num', text: 'A ops' }), el('th', { class: 'num', text: 'B ops' }), el('th', { class: 'num', text: 'A p99' }), el('th', { class: 'num', text: 'B p99' }))));
   const ob = el('tbody', {}); c.per_op.forEach(o => ob.append(el('tr', {}, el('td', { text: o.op }), el('td', { class: 'num', text: fmtInt(o.a_ops) }), el('td', { class: 'num', text: fmtInt(o.b_ops) }), el('td', { class: 'num', text: fmtMs(o.a_p99_ms) }), el('td', { class: 'num', text: fmtMs(o.b_p99_ms) })))); ot.append(ob); body.append(ot);
@@ -2013,13 +2372,15 @@ async function loadSweeps() {
   const sel = clear($('#sweepSelect')); const keep = S.sweepId;
   S.sweeps.forEach(sw => sel.append(el('option', { value: sw.id, text: `${sw.label || sw.id} \u00b7 by ${sw.kind === 'rate' ? 'target rate' : 'worker count'} \u00b7 ${sw.done}/${sw.total} runs \u00b7 ${fmtTime(sw.started_at)}` })));
   if (keep && S.sweeps.some(x => x.id === keep)) sel.value = keep;
-  $('#sweepMsg').hidden = S.sweeps.length > 0 && !!S.sweepId;
+  $('#sweepMsg').hidden = S.sweeps.length > 0; // "No sweeps yet" only when there are none
+  $('#sweepBar').hidden = !S.sweeps.length; // no empty drop-down when there is nothing to pick
   if (!S.sweeps.length) { $('#sweepMsg').hidden = false; $('#sweepBody').hidden = true; }
 }
 function openSweep(id) {
   S.sweepId = id;
   showTab('compare');
-  loadSweeps().then(() => { $('#sweepSelect').value = id; return showSweep(id); });
+  cmp.preselect = []; cmp.seeded = true;
+  cmp.opening.then(() => { $('#sweepSelect').value = id; cmpSelectSweep(id); return showSweep(id); });
 }
 $('#sweepGo').addEventListener('click', () => { if ($('#sweepSelect').value) showSweep($('#sweepSelect').value); });
 async function showSweep(id) {
@@ -2029,7 +2390,9 @@ async function showSweep(id) {
   if (!r.ok) { msg.hidden = false; msg.textContent = r.data.error || 'Could not load the sweep.'; body.hidden = true; return; }
   const sw = r.data; msg.hidden = true; body.hidden = false;
   const rate = sw.kind === 'rate';
-  body.append(el('p', { class: 'settings-note', text: `${sw.label || sw.id}: ${sw.rows.length} of ${sw.total} runs, by ${rate ? 'target rate' : 'worker count'}.` }));
+  body.append(el('div', { class: 'card-head', style: 'margin:8px 0' }, el('strong', { text: 'Sweep: ' + (sw.label || sw.id) }),
+    el('span', { class: 'settings-note', text: `${sw.rows.length} of ${sw.total} runs stored, by ${rate ? 'target rate' : 'worker count'}` }),
+    el('button', { class: 'btn btn-flat btn-small', type: 'button', id: 'sweepOnCharts', title: 'Draw every run of this sweep on the charts below', text: 'Show on charts', onclick: () => cmpSelectSweep(sw.id) })));
   sw.notes.forEach(n => body.append(el('div', { class: 'banner' + (/did not finish|stopped early|could not serve/.test(n) ? ' warn' : ''), text: n })));
   const t = el('table', { class: 'data', id: 'sweepTable' }, el('thead', {}, el('tr', {},
     el('th', { text: rate ? 'Target ops/s' : 'Workers' }), el('th', { class: 'num', text: 'ops/s' }), el('th', { class: 'num', text: 'p50' }), el('th', { class: 'num', text: 'p95' }), el('th', { class: 'num', text: 'p99' }),
@@ -2042,14 +2405,89 @@ async function showSweep(id) {
     el('td', {}, el('button', { class: 'btn btn-small', type: 'button', text: 'Open run', onclick: () => openRun(x.run_id) }), x.stopped ? el('span', { class: 'chip', text: 'stopped' }) : null))));
   t.append(tb); body.append(t);
   body.append(el('p', { class: 'settings-note', text: rate ? '"Served" is achieved throughput divided by the target rate. The highlighted row has the highest throughput.' : '"Scaling" is throughput relative to perfectly linear growth from the first level (100% = doubling workers doubles throughput). The highlighted row has the highest throughput.' }));
-  body.append(el('div', { class: 'charts', style: 'margin-top:16px' },
-    el('div', { class: 'chart-card' }, el('h3', { text: 'Throughput (ops/s)' }), el('div', { class: 'chart-box' }, el('canvas', { id: 'ch-sw-ops' }))),
-    el('div', { class: 'chart-card' }, el('h3', { text: 'Latency by level (ms)' }), el('div', { class: 'chart-box' }, el('canvas', { id: 'ch-sw-lat' })))));
-  delete charts['ch-sw-ops']; delete charts['ch-sw-lat'];
-  const labels = sw.rows.map(x => String(x.value));
-  drawChart('ch-sw-ops', [{ label: 'ops/s', data: sw.rows.map(x => x.ops_per_sec), color: COLORS.sky }], 'ops/s', { labels, points: true, xTitle: rate ? 'target ops/s' : 'workers' });
-  drawChart('ch-sw-lat', [{ label: 'p50', data: sw.rows.map(x => x.p50_ms), color: COLORS.sky }, { label: 'p95', data: sw.rows.map(x => x.p95_ms), color: COLORS.sun }, { label: 'p99', data: sw.rows.map(x => x.p99_ms), color: COLORS.fire }], 'ms', { labels, points: true, xTitle: rate ? 'target ops/s' : 'workers' });
+  const figs = rate ? null : sweepFigures(sw.rows);
+  if (figs) body.append(figs);
+  if (!figs) { // a worker sweep has the two figures above; a rate sweep keeps these charts
+    body.append(el('div', { class: 'charts', style: 'margin-top:16px' },
+      el('div', { class: 'chart-card' }, el('h3', { text: 'Throughput (ops/s)' }), el('div', { class: 'chart-box' }, el('canvas', { id: 'ch-sw-ops' }))),
+      el('div', { class: 'chart-card' }, el('h3', { text: 'Latency by level (ms)' }), el('div', { class: 'chart-box' }, el('canvas', { id: 'ch-sw-lat' })))));
+    delete charts['ch-sw-ops']; delete charts['ch-sw-lat'];
+    const labels = sw.rows.map(x => String(x.value));
+    drawChart('ch-sw-ops', [{ label: 'ops/s', data: sw.rows.map(x => x.ops_per_sec), color: COLORS.sky }], 'ops/s', { labels, points: true, xTitle: rate ? 'target ops/s' : 'workers' });
+    drawChart('ch-sw-lat', [{ label: 'p50', data: sw.rows.map(x => x.p50_ms), color: COLORS.sky }, { label: 'p95', data: sw.rows.map(x => x.p95_ms), color: COLORS.sun }, { label: 'p99', data: sw.rows.map(x => x.p99_ms), color: COLORS.fire }], 'ms', { labels, points: true, xTitle: rate ? 'target ops/s' : 'workers' });
+  }
   setTimeout(resizeCharts, 0);
+}
+
+/* ---------- sweep figures: throughput by worker count, and where more workers stop helping ---------- */
+const swFmt = (v, d = 0) => Number(v).toLocaleString('en-US', { maximumFractionDigits: d });
+function swNice(v, n = 4) {
+  const raw = v / n, mag = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+  const step = [1, 2, 2.5, 5, 10].map(f => f * mag).find(x => x >= raw) || raw;
+  return { step, max: step * n };
+}
+// The first level that adds less than 5% over the one before (the same rule as the notes above).
+function swKnee(pts) {
+  for (let i = 1; i < pts.length; i++) if (pts[i - 1].t > 0 && pts[i].t / pts[i - 1].t - 1 < 0.05) return i;
+  return -1;
+}
+function swBars(pts, knee) {
+  const W = 520, H = 260, L = 50, R = 12, T = 34, B = 30;
+  const { step, max } = swNice(Math.max(...pts.map(x => x.t)) * 1.05);
+  const y = v => H - B - v / max * (H - B - T);
+  const slot = (W - L - R) / pts.length, bw = Math.min(64, slot * 0.55);
+  let g = '';
+  for (let v = 0; v <= max + 1e-9; v += step) g += `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--border)"/><text x="${L - 8}" y="${y(v) + 4}" text-anchor="end">${swFmt(v)}</text>`;
+  pts.forEach((pt, i) => {
+    const cx = L + slot * (i + 0.5), top = y(pt.t), base = H - B, r = Math.min(4, bw / 2);
+    g += `<path d="M${cx - bw / 2} ${base}V${top + r}Q${cx - bw / 2} ${top} ${cx - bw / 2 + r} ${top}H${cx + bw / 2 - r}Q${cx + bw / 2} ${top} ${cx + bw / 2} ${top + r}V${base}Z" fill="#1486ff"/>`;
+    g += `<text x="${cx}" y="${top - (i ? 18 : 6)}" text-anchor="middle" class="sv-ink">${swFmt(pt.t)}</text>`;
+    if (i) {
+      const gain = Math.round((pt.t / pts[i - 1].t - 1) * 100);
+      g += `<text x="${cx}" y="${top - 5}" text-anchor="middle"${knee >= 0 && i >= knee ? ' class="sv-warn"' : ''}>${gain >= 0 ? '+' : '−'}${Math.abs(gain)}%</text>`;
+    }
+    g += `<text x="${cx}" y="${base + 16}" text-anchor="middle">${pt.w}</text>`;
+  });
+  g += `<text x="${(L + W - R) / 2}" y="${H - 2}" text-anchor="middle">Workers</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Throughput by worker count">${g}</svg>`;
+}
+function swKneeChart(pts, knee) {
+  const W = 520, H = 330, L = 50, R = 24;
+  const xMax = Math.max(...pts.map(x => x.w)) * 1.12, x = v => L + v / xMax * (W - L - R);
+  const tn = swNice(Math.max(...pts.map(q => q.t)) * 1.1, 3), withP = pts.filter(q => q.p != null);
+  const pn = swNice(Math.max(1, ...withP.map(q => q.p)) * 1.1, 3);
+  const t1 = 36, b1 = 160, t2 = 205, b2 = 290;
+  const y1 = v => b1 - v / tn.max * (b1 - t1), y2 = v => b2 - v / pn.max * (b2 - t2);
+  let g = '';
+  if (knee > 0) {
+    const x0 = x(pts[knee - 1].w), x1 = x(pts[pts.length - 1].w) + 14, wide = x1 - x0 >= 150;
+    g += `<rect x="${x0}" y="${t1 - 8}" width="${x1 - x0}" height="${b2 - t1 + 8}" fill="#f0b336" opacity=".16"/>`;
+    g += `<text x="${wide ? (x0 + x1) / 2 : x1}" y="${t1 - 14}" text-anchor="${wide ? 'middle' : 'end'}" class="sv-warn">More workers stop helping</text>`;
+  }
+  for (let v = 0; v <= tn.max + 1e-9; v += tn.step) g += `<line x1="${L}" x2="${W - R}" y1="${y1(v)}" y2="${y1(v)}" stroke="var(--border)"/><text x="${L - 8}" y="${y1(v) + 4}" text-anchor="end">${swFmt(v)}</text>`;
+  for (let v = 0; v <= pn.max + 1e-9; v += pn.step) g += `<line x1="${L}" x2="${W - R}" y1="${y2(v)}" y2="${y2(v)}" stroke="var(--border)"/><text x="${L - 8}" y="${y2(v) + 4}" text-anchor="end">${swFmt(v, 1)}</text>`;
+  g += `<text x="12" y="${(t1 + b1) / 2}" transform="rotate(-90 12 ${(t1 + b1) / 2})" text-anchor="middle">ops/s</text>`;
+  g += `<text x="12" y="${(t2 + b2) / 2}" transform="rotate(-90 12 ${(t2 + b2) / 2})" text-anchor="middle">p95 latency (ms)</text>`;
+  const line = (arr, f, color, dash) => arr.length < 2 ? '' : `<path d="${arr.map((q, i) => (i ? 'L' : 'M') + x(q.w).toFixed(1) + ' ' + f(q).toFixed(1)).join('')}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"${dash ? ` stroke-dasharray="${dash}"` : ''}/>`;
+  g += line(pts, q => y1(q.t), '#1486ff') + line(withP, q => y2(q.p), '#ff7e1a', '7 4');
+  pts.forEach(q => {
+    g += `<circle cx="${x(q.w)}" cy="${y1(q.t)}" r="4.5" fill="#1486ff" stroke="#fff" stroke-width="2"/><text x="${x(q.w)}" y="${y1(q.t) - 10}" text-anchor="middle" class="sv-ink">${swFmt(q.t)}</text>`;
+    if (q.p != null) g += `<rect x="${x(q.w) - 4.5}" y="${y2(q.p) - 4.5}" width="9" height="9" rx="1.5" fill="#ff7e1a" stroke="#fff" stroke-width="2"/><text x="${x(q.w)}" y="${y2(q.p) - 10}" text-anchor="middle" class="sv-ink">${swFmt(q.p, 1)}</text>`;
+    g += `<text x="${x(q.w)}" y="${b2 + 16}" text-anchor="middle">${q.w}</text>`;
+  });
+  g += `<line x1="${L}" x2="${W - R}" y1="${b1}" y2="${b1}" stroke="var(--border-strong)"/><line x1="${L}" x2="${W - R}" y1="${b2}" y2="${b2}" stroke="var(--border-strong)"/>`;
+  g += `<text x="${(L + W - R) / 2}" y="${H - 6}" text-anchor="middle">Workers</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Throughput and p95 latency by worker count">${g}</svg>`;
+}
+// Two figures for a worker sweep. The SVG is built from numbers only (no text from the server).
+function sweepFigures(rows) {
+  const pts = rows.map(r => ({ w: Number(r.value), t: Number(r.ops_per_sec), p: Number.isFinite(Number(r.p95_ms)) ? Number(r.p95_ms) : null })).filter(q => Number.isFinite(q.t) && q.t > 0);
+  if (pts.length < 2) return null;
+  const knee = swKnee(pts);
+  const box = el('div', { class: 'sweep-figs', id: 'sweepFigs' });
+  const fig = (title, svg) => { const d = el('div', { class: 'sweep-fig' }, el('div', { class: 'sweep-fig-title', text: title })); d.insertAdjacentHTML('beforeend', svg); return d; };
+  box.append(fig('Throughput by worker count', swBars(pts, knee)), fig('Throughput and p95 latency', swKneeChart(pts, knee)));
+  return box;
 }
 
 /* ---------- Trends ---------- */
@@ -2277,7 +2715,7 @@ async function init() {
     return void (window.plgvReady = true);
   }
   const cm = /compare=([\w-]+),([\w-]+)/.exec(location.hash || '');
-  if (cm) { showTab('compare'); await loadHistory(); fillCompareSelects(); $('#cmpA').value = cm[1]; $('#cmpB').value = cm[2]; await runCompare(); return void (window.plgvReady = true); }
+  if (cm) { cmp.preselect = [cm[1], cm[2]]; showTab('compare'); await cmpOpen(); return void (window.plgvReady = true); }
   const m = /tab=(\w+)/.exec(location.hash || '');
   if (m && document.getElementById('panel-' + m[1])) showTab(m[1]);
   window.plgvReady = true;

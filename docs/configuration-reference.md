@@ -105,6 +105,15 @@ This is off by default, and it only polls the server with read-only commands. Se
 | `slowlog_entries` | 128 | Entries fetched per poll (1-10000). |
 | `latency` | true | Poll `LATENCY LATEST` (when enabled). |
 
+## `server_config`
+
+Off by default. It only reads the server's settings with `CONFIG GET *`. See `server-config.md`.
+
+| Key | Default | Notes |
+|---|---|---|
+| `enabled` | false | Record the server's settings at the start and end of the run. |
+| `name` | empty | Your label for this server setup, at most 80 characters, no control characters. Stored with the run. |
+
 ## `keyspace_analysis`
 
 | Key | Default | Notes |
