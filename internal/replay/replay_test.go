@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -28,6 +29,7 @@ type sink struct {
 	per   map[int][]batch
 	delay time.Duration
 	reply func(cmd []string) valkey.Result
+	count atomic.Int64
 }
 
 func newSink() *sink {
@@ -464,8 +466,16 @@ func TestCancelStopsAReplayEarly(t *testing.T) {
 	p := handmade(t, 1, es...)
 	slow := newSink()
 	slow.delay = 5 * time.Millisecond
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	// Cancel once a few ops have run (not on a wall-clock timer, which can
+	// expire before the first op under -race on a slow CI runner).
+	slow.reply = func(c []string) valkey.Result {
+		if slow.count.Add(1) == 5 {
+			cancel()
+		}
+		return valkey.Result{}
+	}
 	t0 := time.Now()
 	res, err := Run(ctx, slow, p, Options{Speed: 0})
 	if err != nil {
