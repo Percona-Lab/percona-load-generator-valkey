@@ -1,11 +1,12 @@
 # Insights
 
-After each run plgv checks the measurements against a set of rules and prints **findings**:
-what looks wrong, the evidence, and what to do about it. Findings are also saved in the run
-summary. Rules that need server data only run with `-server-metrics`; the client rules always
-run. A healthy run prints `findings: none`.
+After each run, plgv checks the measurements against a set of rules and prints **findings**. A finding tells you
+what looks wrong, shows the evidence, and suggests what to do about it. Findings are also saved in the run
+summary. Rules that need server data only run with `-server-metrics`, while the client rules always run. A
+healthy run prints `findings: none`.
 
-In the web UI the findings are on the **Insights** tab, with a count badge for warnings and critical findings, and they appear in each run's report. Findings are listed most serious first: **critical**, **warning**, then **info**.
+In the web UI, findings are on the **Insights** tab, which has a count badge for warnings and critical findings.
+They also appear in each run's report. The most serious come first: **critical**, then **warning**, then **info**.
 
 | Rule id | Needs server metrics | Fires when | Severity |
 |---|---|---|---|
@@ -22,37 +23,34 @@ In the web UI the findings are on the **Insights** tab, with a count badge for w
 | `bgsave-failed` | yes | `rdb_last_bgsave_status` is not `ok` at the end. | warning |
 | `client-server-mismatch` | yes | plgv's operation count and the server's differ by 5% or more, on a run of at least 2 s. | warning |
 | `server-metrics-unavailable` | yes | Some polls failed (usually an ACL denial). | info |
-| `failover-during-run`, `reshard-during-run`, `node-down`, `cluster-not-ok`, `hot-node`, `uneven-slots`, `redirects` | yes | Cluster and sentinel findings: see `cluster-and-sentinel.md`. | warning / critical / info |
+| `failover-during-run`, `reshard-during-run`, `node-down`, `cluster-not-ok`, `hot-node`, `uneven-slots`, `redirects` | yes | Cluster and Sentinel findings. See `cluster-and-sentinel.md`. | warning / critical / info |
 | `load-generator-bound` | no | plgv used 85% or more of this machine's CPU cores. | warning |
 | `arrivals-dropped` | no | An open-loop run could not send 0.5% or more of the offered operations (critical at 5%). | warning / critical |
 | `target-rate-missed` | no | Achieved under 95% of `run.target_ops_per_sec` (not shown when `arrivals-dropped` already explains it). | warning |
-| `watch-conflicts`, `blocking-timeouts`, `streams-ran-dry`, `pubsub-loss`, `dangerous-commands-allowed` | no | Advanced-command findings: see `advanced-commands.md`. | info / warning / critical |
-| `big-keys` | no | The key-space analysis found a key of 1 MiB or more (warning at 10 MiB) or a collection of 100,000 or more elements: see `key-space-analysis.md`. | info / warning |
+| `watch-conflicts`, `blocking-timeouts`, `streams-ran-dry`, `pubsub-loss`, `dangerous-commands-allowed` | no | Advanced-command findings. See `advanced-commands.md`. | info / warning / critical |
+| `big-keys` | no | The key-space analysis found a key of 1 MiB or more (warning at 10 MiB) or a collection of 100,000 or more elements. See `key-space-analysis.md`. | info / warning |
 | `tail-latency` | no | p99 is more than 10 times p50 and at least 1 ms. | info |
 
 ## Reading the findings
 
-- **client-errors**: the evidence lists counts per error class; the advice follows the most
-  common class (for example OOM means writes were refused at `maxmemory`).
-- **low-hit-ratio**: most often the dataset was not preloaded (`dataset.preload: false`), the
-  key prefix does not match existing data, or keys were evicted or expired. A workload that
-  deletes keys also lowers it.
-- **client-server-mismatch**: usually another application is using the server. Benchmark on a
-  dedicated server. (When running the integration tests, packages must run one at a time for
-  the same reason; `make test-integration` does this.)
-- **load-generator-bound**: the numbers understate the server. Use pipelining, fewer workers,
-  or a bigger machine for plgv.
-- **tail-latency**: informational. Look at `fork-stall` and `slow-commands` for causes.
+- **client-errors:** the evidence lists the counts per error class, and the advice follows the most common class.
+  For example, OOM means writes were refused at `maxmemory`.
+- **low-hit-ratio:** most often the dataset wasn't preloaded (`dataset.preload: false`), the key prefix doesn't
+  match existing data, or keys were evicted or expired. A workload that deletes keys also lowers the ratio.
+- **client-server-mismatch:** usually another application is using the server. Benchmark on a dedicated server.
+  (For the same reason, integration test packages have to run one at a time, and `make test-integration` takes
+  care of that.)
+- **load-generator-bound:** the numbers understate what the server can do. Use pipelining, fewer workers, or a
+  bigger machine for plgv.
+- **tail-latency:** this one is informational. Look at `fork-stall` and `slow-commands` for causes.
 
-## Not yet covered
+## Cluster and Sentinel findings
 
-- **Big keys** (a key much larger than the rest) need the key-space scan added in phase 8; the
-  rule arrives with it.
-- Cluster and sentinel findings (failover, reshard, node down, cluster state, hot node, uneven slots,
-  redirects) are listed in [cluster-and-sentinel.md](cluster-and-sentinel.md#insights-for-clusters).
+The cluster and Sentinel findings (failover, reshard, node down, cluster state, hot node, uneven slots,
+redirects) are listed in [cluster-and-sentinel.md](cluster-and-sentinel.md#insights-for-clusters).
 
 ## Adding or tuning a rule
 
-Rules live in `internal/insights/insights.go`; thresholds are named constants at the top. Each
-rule is a function of its input only and has a fixture test in `insights_test.go` that checks
-it fires, its severity and evidence, and that it stays quiet just below the threshold.
+Rules live in `internal/insights/insights.go`, and the thresholds are named constants at the top. Each rule is a
+function of its input only. Each one also has a fixture test in `insights_test.go` that checks it fires, checks
+its severity and evidence, and checks that it stays quiet just below the threshold.

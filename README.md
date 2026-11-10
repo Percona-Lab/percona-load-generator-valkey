@@ -1,17 +1,21 @@
 # Percona Load Generator for Valkey (plgv)
 
-A workload generator and benchmark tool for [Valkey](https://valkey.io), modeled on the Percona Load
-Generator for MongoDB (plgm). One static binary, a web UI, and a container image.
+plgv is a workload generator and benchmark tool for [Valkey](https://valkey.io). It's modeled on the Percona Load
+Generator for MongoDB (plgm), and it ships as one static binary, a web UI and a container image.
 
-- **Realistic workloads:** strings, hashes, lists, sets, sorted sets, streams, geo, HyperLogLog, bitmaps,
-  pub/sub, transactions, Lua scripts and functions, your own raw commands, and nine ready-made presets.
-- **Honest measurement:** latency percentiles per command, coordinated-omission-aware pacing, client CPU
-  cost, an open loop, load profiles and sweeps, and optional server-side metrics with plain-language findings.
-- **Standalone, cluster and Sentinel**, with failover markers; TLS, mutual TLS and ACL users.
-- **Repeatable:** a seed, an exact operation budget with a traffic fingerprint, record and replay (with outcomes and
-  reply checksums), traffic import from `MONITOR` or the slowlog, multi-server replay and comparison.
-- **Safe by default:** every feature is opt-in and off until you turn it on; the web UI binds to loopback;
-  credentials come only from the environment or a mounted file.
+What you can do with it:
+
+- Run realistic workloads: strings, hashes, lists, sets, sorted sets, streams, geo, HyperLogLog, bitmaps,
+  pub/sub, transactions, Lua scripts and functions, your own raw commands, or one of nine ready-made presets.
+- Measure carefully. You get latency percentiles per command, pacing that accounts for coordinated omission,
+  client CPU cost, open-loop runs, load profiles and sweeps, and optional server-side metrics with
+  plain-language findings.
+- Test standalone, cluster and Sentinel setups (with failover markers), over TLS, mutual TLS and ACL users.
+- Repeat a test exactly. Use a seed, an exact operation budget with a traffic fingerprint, record and replay
+  (with outcomes and reply checksums), import traffic from `MONITOR` or the slowlog, and replay against several
+  servers to compare them.
+- Stay safe. Every feature is opt-in and off until you turn it on, the web UI only listens on loopback, and
+  credentials come from the environment or a mounted file, never from the command line.
 
 ## Quick start
 
@@ -25,11 +29,12 @@ make build-local        # builds bin/plgv
 make valkey-down
 ```
 
-New here? Read `docs/walkthrough.md`. Install options (binaries, Docker, Kubernetes): `docs/deployment.md`.
+New here? Start with `docs/walkthrough.md`. If you want to install it another way (binaries, Docker,
+Kubernetes), see `docs/deployment.md`.
 
 ## Documentation
 
-Every feature has its own page. Pages describe behavior that was run against a real Valkey.
+Every feature has its own page, and everything described there was run against a real Valkey.
 
 ### Start here
 
@@ -99,19 +104,20 @@ Every feature has its own page. Pages describe behavior that was run against a r
 | [`docs/client-library-decision.md`](docs/client-library-decision.md) | Why `valkey-go`, with benchmark numbers |
 | [`docs/discovery-phase0.md`](docs/discovery-phase0.md) | Verified Valkey facts |
 
-Also: `TESTING.md` (how to run the tests and what covers what), `VALKEY_TEST_ENV.md` (the local Docker servers),
-`examples/` (workloads to start from), `CHANGELOG.md`, `THIRD_PARTY.md` (dependencies and licenses).
+You'll also find `TESTING.md` (how to run the tests and what covers what), `VALKEY_TEST_ENV.md` (the local Docker servers),
+`examples/` (workloads to start from), `CHANGELOG.md`, and `THIRD_PARTY.md` (dependencies and licenses).
 
 ## Compatibility
 
-Tested: Valkey 9.1.3 (every suite: standalone, cluster, Sentinel, TLS and ACL) and 8.0.12 (replay). Core commands over RESP2 or
-RESP3; no modules (Search, JSON, Bloom). Redis OSS is not tested. Details: `docs/compatibility.md`.
+We test against Valkey 9.1.3 (all suites: standalone, cluster, Sentinel, TLS and ACL) and 8.0.12 (replay). plgv
+uses core commands over RESP2 or RESP3 and doesn't cover modules (Search, JSON, Bloom). We haven't tested Redis OSS.
+See `docs/compatibility.md` for details.
 
 ## Security
 
-TLS and mutual TLS, ACL users and secrets from files are supported; the web UI has no login and binds to
-loopback. Read `docs/security-tls-acl.md` before exposing anything. Report a vulnerability privately to the
-maintainers rather than in a public issue.
+plgv supports TLS, mutual TLS, ACL users and secrets from files. The web UI has no login and only listens on
+loopback, so read `docs/security-tls-acl.md` before you expose it to anything else. If you find a vulnerability,
+please report it privately to the maintainers instead of opening a public issue.
 
 ## License
 

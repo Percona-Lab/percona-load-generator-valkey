@@ -8,8 +8,8 @@ plgv version
 plgv help
 ```
 
-Start the local test server first (`make valkey-up`, see `VALKEY_TEST_ENV.md`) and build with
-`make build-local`.
+Before you start, bring up the local test server with `make valkey-up` (see `VALKEY_TEST_ENV.md`) and build
+plgv with `make build-local`.
 
 ## `plgv run`
 
@@ -18,8 +18,8 @@ Start the local test server first (`make valkey-up`, see `VALKEY_TEST_ENV.md`) a
 ./bin/plgv run -duration 10s -workers 64 -pipeline 16 -dist zipf
 ```
 
-With no `-config` the built-in defaults run: an 80/20 GET/SET mix. A config file replaces the
-defaults (see `configuration-reference.md`); flags you pass override the file.
+If you don't pass `-config`, plgv uses its built-in defaults, which are an 80/20 GET/SET mix. A config file
+replaces the defaults (see `configuration-reference.md`), and any flags you pass override the file.
 
 | Flag | Overrides | Meaning |
 |---|---|---|
@@ -61,7 +61,7 @@ defaults (see `configuration-reference.md`); flags you pass override the file.
 | `-sample-interval` | `output.sample_interval` | Time-series slice length (default 1s). |
 | `-summary` | `output.summary_file` | Write a JSON run summary to this file. |
 
-Credentials come from `PLGV_USERNAME` and `PLGV_PASSWORD`.
+Credentials come from the `PLGV_USERNAME` and `PLGV_PASSWORD` environment variables.
 
 ## Output
 
@@ -88,17 +88,18 @@ findings:
   none
 ```
 
+A few things to know when you read it:
+
 - With pipelining, each command's latency is the round trip of its whole batch.
-- `misses` are reads that found nothing (not errors).
-- `error classes:` appears when there are errors (`OOM=12 timeout=3`).
-- `client cpu` is the CPU used by plgv itself.
-- The `server:` and `findings:` sections are explained in `metrics-and-server-stats.md` and
-  `insights.md`.
-- Exit code 1 if any command returned an error, 2 for a bad flag or configuration.
+- `misses` are reads that found nothing. They aren't errors.
+- If there are errors, you'll also see an `error classes:` line, for example `OOM=12 timeout=3`.
+- `client cpu` is the CPU that plgv itself used.
+- `metrics-and-server-stats.md` and `insights.md` explain the `server:` and `findings:` sections.
+- The exit code is 1 if any command returned an error, and 2 for a bad flag or configuration.
 
 ## `plgv presets`
 
-Lists the built-in workload presets. Use one with `plgv run -preset <name>`.
+Lists the built-in workload presets. To use one, run `plgv run -preset <name>`.
 
 ## `plgv config`
 
@@ -108,15 +109,18 @@ Lists the built-in workload presets. Use one with `plgv run -preset <name>`.
 ./bin/plgv config -o starter.yaml       # write the defaults to a file to edit
 ```
 
-Load profiles (`ramp`, `step`, `spike`, `sine`) are set in the YAML file (`examples/ramp.yaml`); see
-[load-profiles-and-sweep.md](load-profiles-and-sweep.md), which also covers sweeps and the open loop.
+You set load profiles (`ramp`, `step`, `spike`, `sine`) in the YAML file (see `examples/ramp.yaml`).
+[load-profiles-and-sweep.md](load-profiles-and-sweep.md) covers them, along with sweeps and the open loop.
 
-Cluster and sentinel targets are covered in [cluster-and-sentinel.md](cluster-and-sentinel.md).
+For cluster and Sentinel targets, see [cluster-and-sentinel.md](cluster-and-sentinel.md).
 
 ## `plgv replay`, `plgv compare`, `plgv import-traffic`
 
-`plgv replay [flags] FILE` sends a recording to a server (`record-and-replay.md`); `-targets a=h:p,b=h:p`
-replays on several servers and compares them (`multi-target.md`), `-label NAME` names a single replay.
-`plgv compare [flags] SUMMARY...` compares replay summaries (`replay-comparison.md`).
-`plgv import-traffic -out FILE [captured-file]` converts MONITOR or SLOWLOG traffic into a recording (`traffic-import.md`).
-Run each with `-h` for its flags.
+- `plgv replay [flags] FILE` sends a recording to a server (`record-and-replay.md`). Use
+  `-targets a=h:p,b=h:p` to replay on several servers and compare them (`multi-target.md`), or `-label NAME` to
+  name a single replay.
+- `plgv compare [flags] SUMMARY...` compares replay summaries (`replay-comparison.md`).
+- `plgv import-traffic -out FILE [captured-file]` turns MONITOR or SLOWLOG traffic into a recording
+  (`traffic-import.md`).
+
+Run any of them with `-h` to see its flags.
