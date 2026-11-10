@@ -588,6 +588,36 @@ func printResult(w io.Writer, r *valkey.RunResult) {
 		fmt.Fprintf(w, "  %-14s %12d %7.1f%% %10d %8d %10v %10v\n", strings.ToUpper(s.Op), s.Ops, share, s.Misses, s.Errors,
 			s.P50.Round(time.Microsecond), s.P99.Round(time.Microsecond))
 	}
+	if note := sameLatencyNote(r.PerOp); note != "" {
+		fmt.Fprintln(w, "\n"+note)
+	}
+}
+
+// sameLatencyNote explains, in plain words, why every operation can show
+// almost the same latency. It returns "" unless the p50 values are within 10%
+// of each other across at least three operations.
+func sameLatencyNote(ops []valkey.OpStat) string {
+	var lo, hi time.Duration
+	n := 0
+	for _, o := range ops {
+		if o.P50 <= 0 {
+			continue
+		}
+		if n == 0 || o.P50 < lo {
+			lo = o.P50
+		}
+		if o.P50 > hi {
+			hi = o.P50
+		}
+		n++
+	}
+	if n < 3 || float64(hi-lo) > 0.10*float64(lo) {
+		return ""
+	}
+	return "note: every operation shows almost the same latency. That is normal when the server is kept\n" +
+		"busy: each request mostly waits in line behind the others, and the wait is about the same for all\n" +
+		"commands. It does not mean one command is as cheap as another. To see what each command costs,\n" +
+		"run with fewer workers (for example -workers 1), or set a fixed rate with -target-ops and -co."
 }
 
 func printServer(w io.Writer, s *servermetrics.Summary, r *valkey.RunResult) {

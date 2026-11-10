@@ -99,6 +99,10 @@ This tab shows the whole-run mean, p50, p95, p99, p99.9 and max, latency over ti
 percentiles. A note says how latency was measured: service time, or coordinated-omission aware if you set a
 target rate and that option. With pipelining, every operation in a batch is charged the batch round trip.
 
+If every operation shows almost the same latency, that is normal when the server is kept busy: requests mostly
+wait in line, and the wait is the same for all commands. See
+[why every command can show the same latency](performance-tuning.md#why-every-command-can-show-the-same-latency).
+
 ## Presets and key space
 
 *Workload* offers **Start from a preset** ([presets.md](presets.md)). If you turn on *Key-space analysis*

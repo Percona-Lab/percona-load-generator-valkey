@@ -621,6 +621,7 @@ nav.tabs { background:var(--surface); border:1px solid var(--border); border-rad
     </div>
     <h3 style="margin-top:16px">Per operation</h3>
     <p class="settings-note" id="opNote">For most operations a miss is a read that found nothing. For <code>WATCH_INCR</code> it is an aborted (conflicting) transaction, and for blocking reads (<code>BLPOP</code>, <code>BRPOP</code>, <code>XREAD_BLOCK</code>) a timeout.</p>
+    <p class="settings-note" id="opLatNote">Latency here is the time from sending a request to getting the answer, including time spent waiting in line. If the server is kept very busy, every operation waits about the same, so the numbers can look almost identical. That does not mean the commands cost the same. To compare commands, run with fewer workers, or set a fixed rate.</p>
     <table class="data" id="opTable"><thead><tr><th>Operation</th><th class="num">Ops</th><th class="num">Share</th><th class="num">Misses</th><th class="num">Errors</th><th class="num" id="opP99Head">p99</th></tr></thead><tbody></tbody></table>
   </div>
 </section>
@@ -640,6 +641,7 @@ nav.tabs { background:var(--surface); border:1px solid var(--border); border-rad
       <div class="charts"><div class="chart-card"><h3>Delivery latency over time (ms)</h3><div class="chart-box"><canvas id="ch-pubsub"></canvas></div></div></div>
     </div>
     <h3 style="margin-top:16px">By operation</h3>
+    <p class="settings-note" id="latNote">Latency here is the time from sending a request to getting the answer, including time spent waiting in line. If the server is kept very busy, every operation waits about the same, so the numbers can look almost identical. That does not mean the commands cost the same. To compare commands, run with fewer workers, or set a fixed rate.</p>
     <table class="data" id="latTable"><thead><tr><th>Operation</th><th class="num">Ops</th><th class="num">p50</th><th class="num">p95</th><th class="num">p99</th><th class="num">max</th></tr></thead><tbody></tbody></table>
   </div>
 </section>

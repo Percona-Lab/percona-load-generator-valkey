@@ -43,6 +43,25 @@ Keep adding workers until throughput stops growing (the server is saturated) or 
 `load-profiles-and-sweep.md`). If you want to measure latency without saturating the server, fix the rate with
 `-target-ops` and add `-co` so waiting counts.
 
+## Why every command can show the same latency
+
+If the per-operation table shows almost the same latency for every command (for example GET and SET both at
+819µs), the tool is not broken. Here is what is happening:
+
+- Latency is the time from sending a request to getting the answer. That includes **time spent waiting in line**.
+- A Valkey server handles requests mostly one at a time. If many workers keep it busy, each request has to wait
+  for the ones ahead of it.
+- That wait is much longer than the work itself (a few microseconds), and it is about the same for every command.
+  So all commands look alike.
+
+It does **not** mean the commands cost the same. To see what each command really costs:
+
+- Use fewer workers, for example `-workers 1`. Nothing waits in line, so the numbers show the real difference.
+- Or set a fixed rate below what the server can handle, for example `-target-ops 20000 -co`.
+
+plgv prints a short note under the table when it sees this, and the Web UI shows one above the per-operation
+tables on Live Metrics and Latency Analysis.
+
 ## Pipelining: throughput for latency
 
 `-pipeline N` sends N commands per round trip. Every command is charged the whole batch's time, so latency goes

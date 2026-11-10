@@ -84,6 +84,8 @@ server:                          (only with -server-metrics)
   ops processed: 1423811 (plgv sent 1423808)
   ...
 
+note: every operation shows almost the same latency. ...   (only when that happens; see performance-tuning.md)
+
 findings:
   none
 ```

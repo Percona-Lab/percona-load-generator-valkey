@@ -6,8 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Percona-Lab/percona-load-generator-valkey/internal/keyscan"
+	"github.com/Percona-Lab/percona-load-generator-valkey/internal/valkey"
 )
 
 func write(t *testing.T, body string) string {
@@ -276,5 +278,25 @@ func TestKeySpaceFlagsAndOutput(t *testing.T) {
 		if !strings.Contains(w.String(), want) {
 			t.Fatalf("missing %q in %q", want, w.String())
 		}
+	}
+}
+
+func TestSameLatencyNote(t *testing.T) {
+	mk := func(p ...time.Duration) []valkey.OpStat {
+		var o []valkey.OpStat
+		for _, d := range p {
+			o = append(o, valkey.OpStat{P50: d})
+		}
+		return o
+	}
+	us := time.Microsecond
+	if sameLatencyNote(mk(180*us, 180*us, 182*us)) == "" {
+		t.Error("expected a note when p50 values are within 10%")
+	}
+	if sameLatencyNote(mk(100*us, 180*us, 300*us)) != "" {
+		t.Error("no note expected when latencies differ")
+	}
+	if sameLatencyNote(mk(180*us, 180*us)) != "" {
+		t.Error("no note expected for fewer than three operations")
 	}
 }
